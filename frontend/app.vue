@@ -1,17 +1,12 @@
+
+
 <template>
-  <div>
-    <NuxtRouteAnnouncer />
-<!--    <NuxtWelcome />-->
-    <TodoList />
+  <div id="app">
+    <NuxtPage/>
+    <NuxtLink to="/">Home</NuxtLink>
   </div>
 </template>
 
-<script>
-import TodoList from '~/components/TodoList.vue';
-export default {
-  name: 'IndexPage',
-  components: {
-    TodoList,
-  },
-}
-</script>
+<style>
+
+</style>
