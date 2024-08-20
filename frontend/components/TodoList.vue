@@ -1,21 +1,24 @@
 <template>
-  <div>
-    <h1>Todo List</h1>
+  <UContainer class="max-w-xl mx-auto py-10">
+    <h1 class="text-2xl font-bold mb-6">Todo List</h1>
 
     <!-- Form to Add Todo -->
-    <form @submit.prevent="addTodo">
-      <input v-model="newTodo" placeholder="Enter todo" required />
-      <button type="submit">Add Todo</button>
-    </form>
+    <UForm @submit.prevent="addTodo" class="flex items-center space-x-4">
+      <UInput v-model="newTodo" placeholder="Enter todo" required class="flex-grow" />
+      <UButton type="submit" color="primary">Add Todo</UButton>
+    </UForm>
 
     <!-- List of Todos -->
-    <ul>
-      <li v-for="todo in todos" :key="todo.id">
-        {{ todo.name }} (Created: {{ new Date(todo.created).toLocaleString() }})
-        <button @click="deleteTodo(todo.id)">Delete</button>
-      </li>
-    </ul>
-  </div>
+    <UList class="mt-8 space-y-4">
+      <UListItem v-for="todo in todos" :key="todo.id" class="flex justify-between items-center">
+        <div>
+          <strong>{{ todo.name }}</strong>
+          <p class="text-sm text-gray-500">Created: {{ new Date(todo.created).toLocaleString() }}</p>
+        </div>
+        <UButton color="red" @click="deleteTodo(todo.id)">Delete</UButton>
+      </UListItem>
+    </UList>
+  </UContainer>
 </template>
 
 <script setup>
