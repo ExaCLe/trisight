@@ -15,6 +15,15 @@ def get_todos(db: Session):
     return db.query(models.Todo).all()
 
 
+def update_todo(db: Session, todo_id: int, todo: schemas.TodoUpdate):
+    db_todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
+    if db_todo:
+        db_todo.name = todo.name
+        db.commit()
+        db.refresh(db_todo)
+    return db_todo
+
+
 def delete_todo(db: Session, todo_id: int):
     db_todo = db.query(models.Todo).filter(models.Todo.id == todo_id).first()
     if db_todo:
