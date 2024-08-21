@@ -2,7 +2,8 @@ from fastapi import HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 
 from backend import schemas
-from backend.item_config_crud import create_item_config, get_all_item_configs, delete_item_config, update_item_config, \
+from backend.item_config.crud_item_config import create_item_config, get_all_item_configs, delete_item_config, \
+    update_item_config, \
     get_item_config_by_id
 from backend.utils import get_db
 
@@ -14,10 +15,12 @@ router = APIRouter()
 def create_item_config_endpoint(item_config: schemas.ItemConfig, db: Session = Depends(get_db)):
     return create_item_config(db=db, item_config=item_config)
 
+
 # Endpoint to get all item configs
 @router.get("/", response_model=list[schemas.ItemConfigResponse])
 def read_all_item_configs_endpoint(db: Session = Depends(get_db)):
     return get_all_item_configs(db)
+
 
 # Endpoint to get an item config by id
 @router.get("/{item_config_id}", response_model=schemas.ItemConfigResponse)

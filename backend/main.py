@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database import engine
+from backend.item_config.api_item_config import router as item_config_router
+from backend.item_config_results.api_item_config_result import router as item_config_result_router
 from backend.models import Base
-from backend.todo_api import router as todo_router
-from backend.item_config_api import router as item_config_router
 
 app = FastAPI()
 
@@ -19,5 +19,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(todo_router, prefix="/api/todos")
 app.include_router(item_config_router, prefix="/api/item_configs")
+app.include_router(item_config_result_router, prefix="/api/item_config_results")
