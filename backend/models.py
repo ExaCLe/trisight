@@ -1,13 +1,30 @@
 import datetime
 from typing import List, Optional
 
-from sqlalchemy import String, DateTime, Integer, CheckConstraint, Boolean, ForeignKey
+from sqlalchemy import String, DateTime, Integer, CheckConstraint, Boolean, ForeignKey, Table, Column
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 
 
 # Base class for the ORM models
 class Base(DeclarativeBase):
     pass
+
+
+# Association table for the many-to-many relationship between TestConfig and ItemConfig
+test_config_item_config_association = Table(
+    "test_config_item_config",
+    Base.metadata,
+    Column("test_config_id", ForeignKey("test_config.id"), primary_key=True),
+    Column("item_config_id", ForeignKey("item_config.id"), primary_key=True)
+)
+
+# Association table for the many-to-many relationship between TestConfigResult and ItemConfigResult
+test_config_result_item_config_result_association = Table(
+    "test_config_result_item_config_result",
+    Base.metadata,
+    Column("test_config_result_id", ForeignKey("test_config_result.id"), primary_key=True),
+    Column("item_config_result_id", ForeignKey("item_config_result.id"), primary_key=True)
+)
 
 
 class ItemConfig(Base):
@@ -30,6 +47,12 @@ class ItemConfig(Base):
     # Relationship with ItemConfigResult
     item_config_results: Mapped[List["ItemConfigResult"]] = relationship(back_populates="item_config")
 
+    # Many-to-many relationship with TestConfig
+    test_configs: Mapped[List["TestConfig"]] = relationship(
+        secondary=test_config_item_config_association,
+        back_populates="item_configs"
+    )
+
 
 class User(Base):
     __tablename__ = "user"
@@ -43,6 +66,10 @@ class User(Base):
 
     # Relationship with ItemConfigResult
     item_config_results: Mapped[List["ItemConfigResult"]] = relationship(back_populates="user")
+
+    # Relationship with TestConfig and TestConfigResult
+    test_configs: Mapped[List["TestConfig"]] = relationship(back_populates="user")
+    test_config_results: Mapped[List["TestConfigResult"]] = relationship(back_populates="user")
 
 
 class ItemConfigResult(Base):
@@ -60,3 +87,56 @@ class ItemConfigResult(Base):
     # Relationships
     item_config: Mapped["ItemConfig"] = relationship(back_populates="item_config_results")
     user: Mapped[Optional["User"]] = relationship(back_populates="item_config_results")
+
+    # Many-to-many relationship with TestConfigResult
+    test_config_results: Mapped[List["TestConfigResult"]] = relationship(
+        secondary=test_config_result_item_config_result_association,
+        back_populates="item_config_results"
+    )
+
+
+class TestConfig(Base):
+    __tablename__ = "test_config"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    created: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+    name: Mapped[str] = mapped_column(String)
+
+    # Many-to-many relationship with ItemConfig
+    item_configs: Mapped[List["ItemConfig"]] = relationship(
+        secondary=test_config_item_config_association,
+        back_populates="test_configs"
+    )
+
+    # Relationship with User
+    user: Mapped[Optional["User"]] = relationship(back_populates="test_configs")
+
+    # Relationship with TestConfigResult
+    test_config_results: Mapped[List["TestConfigResult"]] = relationship(back_populates="test_config")
+
+
+class TestConfigResult(Base):
+    __tablename__ = "test_config_result"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    created: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+    test_config_id: Mapped[int] = mapped_column(ForeignKey("test_config.id"), nullable=False)
+    time: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    correct_answers: Mapped[int] = mapped_column(Integer)
+    wrong_answers: Mapped[int] = mapped_column(Integer)
+
+    # Many-to-many relationship with ItemConfigResult
+    item_config_results: Mapped[List["ItemConfigResult"]] = relationship(
+        secondary=test_config_result_item_config_result_association,
+        back_populates="test_config_results"
+    )
+
+    # Relationship with User
+    user: Mapped["User"] = relationship(back_populates="test_config_results")
+
+    # Relationship with TestConfig
+    test_config: Mapped["TestConfig"] = relationship(back_populates="test_config_results")
