@@ -14,3 +14,6 @@ uvicorn backend.main:app --reload
 ```bash
 yarn dev --open
 ```
+
+# Backend Documentation 
+- Start the backend server and go to 'http://localhost:8000/docs/' to find in depth documentation about possible errors, expected input and return objects

@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, MetaData, event, Engine
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 DATABASE_URL = "sqlite:///./test.db"
@@ -13,3 +13,8 @@ Base = declarative_base()
 metadata = MetaData()
 
 
+@event.listens_for(Engine, "connect")
+def enable_foreign_keys(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()

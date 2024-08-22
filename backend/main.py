@@ -1,10 +1,9 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
 
-from backend import schemas
-from backend.todo_crud import get_todos, delete_todo, create_todo
-from backend.database import engine, SessionLocal
+from backend.database import engine
+from backend.item_config.api_item_config import router as item_config_router
+from backend.item_config_results.api_item_config_result import router as item_config_result_router
 from backend.models import Base
 
 app = FastAPI()
@@ -20,37 +19,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.get("/api/hello")
-def read_root():
-    return {"message": "Hello from FastAPI"}
-
-
-# Dependency to get the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# Endpoint to create a new todo
-@app.post("/api/todos/", response_model=schemas.TodoResponse)
-def create_todo_endpoint(todo: schemas.TodoCreate, db: Session = Depends(get_db)):
-    return create_todo(db=db, todo=todo)
-
-
-# Endpoint to get all todos
-@app.get("/api/todos/", response_model=list[schemas.TodoResponse])
-def read_todos_endpoint(db: Session = Depends(get_db)):
-    return get_todos(db)
-
-
-# Endpoint to delete a todo by ID
-@app.delete("/api/todos/{todo_id}", response_model=schemas.TodoResponse)
-def delete_todo_endpoint(todo_id: int, db: Session = Depends(get_db)):
-    todo = delete_todo(db, todo_id=todo_id)
-    if todo is None:
-        raise HTTPException(status_code=404, detail="Todo not found")
-    return todo
+app.include_router(item_config_router, prefix="/api/item_configs")
+app.include_router(item_config_result_router, prefix="/api/item_config_results")
