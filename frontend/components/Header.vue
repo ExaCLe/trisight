@@ -19,8 +19,9 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 100px;
+  height: 10vh;
   padding: 0 20px;
+  z-index: 999;
 }
 
 .logo {
