@@ -4,10 +4,11 @@
     <div class="intro-section">
       <div class="content-container">
         <div class="animation-area">
-          <video autoplay muted loop class="animation-video">
-            <source src="../animations/spinning-triangle.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+          <img
+            class="triangle-image"
+            src="../images/trisight-spinning-triangle.png"
+            alt="Spinning Triangle"
+          />
         </div>
         <div class="info-container">
           <h1>Wie schnell ist dein Auge...?</h1>
@@ -17,21 +18,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Dreieckiger Übergang -->
-    <div class="triangle-transition">
-      <!-- Mehrere Dreiecke mit verschiedenen Größen und Animationen -->
-      <div class="triangle triangle-small"></div>
-      <div class="triangle triangle-medium"></div>
-      <div class="triangle triangle-large"></div>
-      <div class="triangle triangle-small-2"></div>
-      <div class="triangle triangle-medium-2"></div>
-      <div class="triangle triangle-large-2"></div>
-      <div class="triangle triangle-small-3"></div>
-      <div class="triangle triangle-medium-3"></div>
-      <div class="triangle triangle-large-3"></div>
-      
     </div>
 
     <!-- Untere Sektion mit weißem Hintergrund -->
@@ -54,6 +40,14 @@
   </div>
 </template>
 
+<script>
+export default {
+  data() {
+    return {};
+  },
+};
+</script>
+
 <style scoped>
 .homepage {
   width: 100%;
@@ -64,7 +58,7 @@
 .intro-section {
   background-color: #185262;
   color: white;
-  min-height: 80vh;
+  min-height: 90vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -90,18 +84,30 @@
   position: relative;
 }
 
-.animation-video {
-  width: 90%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
+.triangle-image {
+  height: 400px;
+  animation: rotateAndPulse 9s infinite linear;
+}
+
+/* Kombinierte Keyframes für Drehung und Pulsiereffekt */
+@keyframes rotateAndPulse {
+  0% {
+    transform: rotate(0deg) scale(0.6);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(360deg) scale(0.6);
+  }
 }
 
 .info-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* Linksbündig ausrichten */
+  align-items: flex-start; 
+  margin-top: 80px;
   padding: 20px;
   position: relative;
 }
@@ -136,108 +142,6 @@ h1 {
 .test-button:hover {
   background-color: #0f3e4b;
   color: white;
-}
-
-/* Übergang mit Dreiecken */
-.triangle-transition {
-  position: relative;
-  width: 100%;
-  height: 100px; /* Höhe des Übergangs */
-  background-color: #185262;
-  overflow: hidden; /* Verhindert, dass Animationen aus dem Container ragen */
-}
-
-.triangle {
-  position: absolute;
-  bottom: 0;
-  width: 80px;
-  height: 80px;
-  background-color: rgb(255, 255, 255);
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  animation: moveSideways 10s infinite ease-in-out;
-}
-
-.triangle-small {
-  width: 50px;
-  height: 50px;
-  left: 8%;
-  animation-duration: 6s;
-  animation-delay: -2s;
-  background-color: rgba(180, 93, 93, 0.199);
-}
-
-.triangle-small-2 {
-  width: 100px;
-  height: 50px;
-  left: 60%;
-}
-
-.triangle-small-3 {
-  width: 220px;
-  height: 70px;
-  left: 80%;
-  animation-duration: 6s;
-  animation-delay: -2s;
-}
-
-.triangle-medium {
-  width: 100px;
-  height: 100px;
-  left: 40%;
-  animation-duration: 8s;
-  animation-delay: -4s;
-  background-color: rgba(180, 93, 93, 0.199);
-}
-
-.triangle-medium-2 {
-  width: 160px;
-  height: 100px;
-  left: 0%;
-  animation-duration: 8s;
-  animation-delay: 1s;
-}
-
-.triangle-medium-3 {
-  width: 160px;
-  height: 100px;
-  left: 15%;
-  animation-duration: 8s;
-  animation-delay: 10s;
-}
-
-
-.triangle-large {
-  width: 150px;
-  height: 100px;
-  left: 80%;
-  animation-duration: 12s;
-  animation-delay: -6s;
-  background-color: rgba(180, 93, 93, 0.199);
-}
-
-.triangle-large-2 {
-  width: 250px;
-  height: 80px;
-  left: 30%;
-  animation-duration: 12s;
-  animation-delay: -7s;
-}
-
-.triangle-large-3 {
-  width: 150px;
-  height: 80px;
-  left: 90%;
-  animation-duration: 12s;
-  animation-delay: -7s;
-}
-
-@keyframes moveSideways {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(50px);
-  }
 }
 
 /* Untere Sektion */
