@@ -1,11 +1,14 @@
-
+<script setup lang="ts">
+import Playscreen from './pages/playscreen.vue';
+</script>
 
 
 <template>
   <div id="app">
     <NuxtLayout>
       <Header />
-      <NuxtPage />
+      <!--<NuxtPage />-->
+        <Playscreen></Playscreen>
       <Footer />
     </NuxtLayout>
   </div>
