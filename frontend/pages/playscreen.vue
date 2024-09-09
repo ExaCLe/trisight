@@ -4,12 +4,12 @@
       <div class="score">Punkte: {{ score }}</div>
       <!-- Visuelle Timer-Darstellung -->
       <div class="timer-wrapper">
-        <svg class="timer-svg" :viewBox="`0 0 120 120`">
+        <svg :width="timerSvgSize" :height="timerSvgSize" class="timer-svg" :viewBox="`0 0 ${timerSvgSize} ${timerSvgSize}`">
           <circle
             class="timer-path"
-            cx="60"
-            cy="60"
-            r="55"
+            :cx="timerSvgCenter"
+            :cy="timerSvgCenter"
+            :r="timerRadius"
             :style="{ strokeDashoffset: timerDashOffset }"
           />
         </svg>
@@ -55,6 +55,7 @@ const remainingTime = ref(0);
 const currentItem = ref({});
 const timer = ref(null);
 const totalTime = ref(0); // Speichert die Gesamtzeit für den Timer
+const isGameOver = ref(false); // Neuer Zustand zur Überprüfung des Spielendes
 
 const fetchData = async () => {
   try {
@@ -91,6 +92,8 @@ const startTimer = () => {
 };
 
 const handleKeyPress = (event) => {
+  if (isGameOver.value) return; // Wenn das Spiel vorbei ist, keine Eingaben verarbeiten
+
   switch (event.key) {
     case 'ArrowUp':
       checkAnswer('N');
@@ -122,7 +125,20 @@ const loadNextItem = () => {
     remainingTime.value = totalTime.value;
     startTimer();
   } else {
-    console.log('Spiel beendet. Punktestand: ' + score.value);
+    endGame(); // Beende das Spiel, wenn alle Items durchlaufen sind
+  }
+};
+
+const endGame = () => {
+  isGameOver.value = true; // Setze den Spielzustand auf "vorbei"
+  clearInterval(timer.value); // Stoppe den Timer
+  console.log('Spiel beendet. Punktestand: ' + score.value);
+  removeKeyListener(); // Entferne die Event-Listener für die Pfeiltasten
+};
+
+const removeKeyListener = () => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', handleKeyPress);
   }
 };
 
@@ -155,9 +171,19 @@ const getRotationStyle = (orientation) => {
   return { rotation, margin };
 };
 
+// Berechnung des Radius und der Größe des Timer-SVGs
+const timerRadius = computed(() => {
+  const circleSize = parseFloat(currentItem.value.circle_size) || 0; // Fallback-Wert 0, wenn circle_size nicht definiert
+  return (circleSize / 2) + 8; // Radius des Hintergrundkreises + Randabstand
+});
+const timerSvgSize = computed(() => {
+  return timerRadius.value ? (timerRadius.value + 10) * 2 : 120; // Fallback auf 120 bei undefined oder NaN
+});
+const timerSvgCenter = computed(() => timerRadius.value ? timerRadius.value + 5 : 60); // Fallback auf 60 bei undefined oder NaN
+
 // Berechnung für den visuellen Timer-Balken
 const timerDashOffset = computed(() => {
-  const maxDashOffset = 2 * Math.PI * 55; // Umfang des Kreises, angepasst an den größeren Radius
+  const maxDashOffset = 2 * Math.PI * timerRadius.value; // Umfang des Kreises, angepasst an den größeren Radius
   return (1 - remainingTime.value / totalTime.value) * maxDashOffset; // Rückwärtslaufender Balken
 });
 
@@ -169,11 +195,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('keydown', handleKeyPress);
-  }
+  removeKeyListener(); // Entferne den Event-Listener, wenn die Komponente zerstört wird
 });
 </script>
+
 
 <style scoped>
 .playscreen {
@@ -195,24 +220,21 @@ onUnmounted(() => {
 
 .timer-wrapper {
   position: relative;
-  width: 120px;
-  height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .timer-svg {
-  width: 120px;
-  height: 120px;
+  width: auto;
+  height: auto;
   position: absolute;
-  transform: translate(-700%, 250%);
 }
 
 .timer-path {
   fill: none;
-  stroke: #5194c0; /* Farbe des Timer-Balkens */
-  stroke-width: 2;
+  stroke: #181818; /* Farbe des Timer-Balkens */
+  stroke-width: 5; /* Breitere Linie, damit der Balken besser sichtbar ist */
   stroke-dasharray: 345.6; /* Gesamtumfang des Kreises für 100% bei Radius 55 */
   transform: rotate(-90deg); /* Startpunkt oben */
   transform-origin: 50% 50%;
@@ -224,7 +246,7 @@ onUnmounted(() => {
   align-items: center;
   height: 60%;
   width: 60%;
-  position: relative; /* Sicherstellen, dass Timer auf Container bezogen ist */
+  position: relative;
 }
 
 .circle-background {
