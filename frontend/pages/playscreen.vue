@@ -2,18 +2,8 @@
   <div class="playscreen">
     <div class="score-timer">
       <div class="score">Punkte: {{ score }}</div>
-      <!-- Visuelle Timer-Darstellung -->
-      <div class="timer-wrapper">
-        <svg :width="timerSvgSize" :height="timerSvgSize" class="timer-svg" :viewBox="`0 0 ${timerSvgSize} ${timerSvgSize}`">
-          <circle
-            class="timer-path"
-            :cx="timerSvgCenter"
-            :cy="timerSvgCenter"
-            :r="timerRadius"
-            :style="{ strokeDashoffset: timerDashOffset }"
-          />
-        </svg>
-      </div>
+      <!-- Anzeige des Timers als Zahl -->
+      <div class="timer">Zeit: {{ remainingTime / 1000 }} Sekunden</div>
     </div>
 
     <!-- Darstellung des aktuellen Spielzustands (Triangle und Circle) -->
@@ -43,11 +33,11 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+
 defineProps({
   isTrisightMode: Boolean
 });
-
-import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const score = ref(0);
 const currentIndex = ref(0);
@@ -171,22 +161,6 @@ const getRotationStyle = (orientation) => {
   return { rotation, margin };
 };
 
-// Berechnung des Radius und der Größe des Timer-SVGs
-const timerRadius = computed(() => {
-  const circleSize = parseFloat(currentItem.value.circle_size) || 0; // Fallback-Wert 0, wenn circle_size nicht definiert
-  return (circleSize / 2) + 8; // Radius des Hintergrundkreises + Randabstand
-});
-const timerSvgSize = computed(() => {
-  return timerRadius.value ? (timerRadius.value + 10) * 2 : 120; // Fallback auf 120 bei undefined oder NaN
-});
-const timerSvgCenter = computed(() => timerRadius.value ? timerRadius.value + 5 : 60); // Fallback auf 60 bei undefined oder NaN
-
-// Berechnung für den visuellen Timer-Balken
-const timerDashOffset = computed(() => {
-  const maxDashOffset = 2 * Math.PI * timerRadius.value; // Umfang des Kreises, angepasst an den größeren Radius
-  return (1 - remainingTime.value / totalTime.value) * maxDashOffset; // Rückwärtslaufender Balken
-});
-
 onMounted(() => {
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', handleKeyPress);
@@ -198,7 +172,6 @@ onUnmounted(() => {
   removeKeyListener(); // Entferne den Event-Listener, wenn die Komponente zerstört wird
 });
 </script>
-
 
 <style scoped>
 .playscreen {
@@ -216,28 +189,6 @@ onUnmounted(() => {
   width: 80%;
   margin-bottom: 20px;
   position: relative;
-}
-
-.timer-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.timer-svg {
-  width: auto;
-  height: auto;
-  position: absolute;
-}
-
-.timer-path {
-  fill: none;
-  stroke: #181818; /* Farbe des Timer-Balkens */
-  stroke-width: 5; /* Breitere Linie, damit der Balken besser sichtbar ist */
-  stroke-dasharray: 345.6; /* Gesamtumfang des Kreises für 100% bei Radius 55 */
-  transform: rotate(-90deg); /* Startpunkt oben */
-  transform-origin: 50% 50%;
 }
 
 .triangle-container {
@@ -268,5 +219,10 @@ onUnmounted(() => {
   margin-top: 20px;
   font-size: 18px;
   color: #333;
+}
+
+.timer {
+  font-size: 20px;
+  color: #181818;
 }
 </style>
