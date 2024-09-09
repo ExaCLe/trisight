@@ -7,8 +7,7 @@ import Playscreen from './pages/playscreen.vue';
   <div id="app">
     <NuxtLayout>
       <Header />
-      <!--<NuxtPage />-->
-        <Playscreen></Playscreen>
+        <NuxtPage />
       <Footer />
     </NuxtLayout>
   </div>

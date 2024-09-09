@@ -1,6 +1,7 @@
 <template>
   <div class="playscreen">
-    <div class="score-timer">
+    <!-- Nur anzeigen, wenn isTrisightMode true ist -->
+    <div class="score-timer" v-if="isTrisightMode">
       <div class="score">Punkte: {{ score }}</div>
       <!-- Anzeige des Timers als Zahl -->
       <div class="timer">Zeit: {{ remainingTime / 1000 }} Sekunden</div>
@@ -34,10 +35,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
 
-defineProps({
-  isTrisightMode: Boolean
-});
+// Router verwenden, um den Query-Parameter zu erhalten
+const route = useRoute();
+const isTrisightMode = ref(route.query.isTrisightMode === 'true');
 
 const score = ref(0);
 const currentIndex = ref(0);
@@ -65,7 +67,9 @@ const initializeGame = () => {
     currentItem.value = data.item_configs[0]; // Setze das erste Item als Start
     totalTime.value = currentItem.value.time_visible_ms;
     remainingTime.value = totalTime.value;
-    startTimer();
+    if (isTrisightMode.value) {
+      startTimer();
+    }
   }
 };
 
@@ -113,7 +117,9 @@ const loadNextItem = () => {
     currentItem.value = data.item_configs[currentIndex.value];
     totalTime.value = currentItem.value.time_visible_ms;
     remainingTime.value = totalTime.value;
-    startTimer();
+    if (isTrisightMode.value) {
+      startTimer(); // Timer nur im Trisight Mode fortsetzen
+    }
   } else {
     endGame(); // Beende das Spiel, wenn alle Items durchlaufen sind
   }
@@ -174,6 +180,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Dein CSS bleibt unverändert */
 .playscreen {
   display: flex;
   flex-direction: column;

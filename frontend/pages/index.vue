@@ -13,8 +13,12 @@
         <div class="info-container">
           <h1>Wie schnell ist dein Auge...?</h1>
           <div class="button-group">
-            <button class="test-button">Vision Test</button>
-            <button class="test-button">Trisight Mode</button>
+            <NuxtLink :to="{ path: '/playscreen', query: { isTrisightMode: false } }" class="test-button">
+              Vision Test
+            </NuxtLink>
+            <NuxtLink :to="{ path: '/playscreen', query: { isTrisightMode: true } }" class="test-button">
+              Trisight Mode
+            </NuxtLink>
           </div>
         </div>
       </div>
