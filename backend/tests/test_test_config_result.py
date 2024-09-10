@@ -49,7 +49,7 @@ def get_user_id_and_token(username="testuser"):
         },
     )
     login_response = client.post(
-        "/api/users/login", data={"username": "testuser", "password": "testpassword"}
+        "/api/users/login", data={"username": username, "password": "testpassword"}
     )
     token = login_response.json()["access_token"]
 
@@ -136,7 +136,21 @@ def test_create_test_config_result(setup_database):
 
 
 def test_create_test_config_result_unauthorized(setup_database):
-    response = insert_test_config_result_to_db("invalid_token")
+    token, user_id = get_user_id_and_token()
+    response = insert_test_config_to_db(token)
+    test_config_id = response.json()["id"]
+    test_config_result_data = {
+        "test_config_id": test_config_id,
+        "correct_answers": 2,
+        "wrong_answers": 0,
+        "item_config_result_ids": [],
+        "time": "2024-01-01T00:00:00",
+    }
+    response = client.post(
+        "/api/test_config_results/",
+        json=test_config_result_data,
+        headers={"Authorization": f"Bearer invalid_token"},
+    )
     assert response.status_code == 401
 
 

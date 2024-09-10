@@ -68,7 +68,7 @@ def get_user_id_and_token(username="testuser"):
         },
     )
     login_response = client.post(
-        "/api/users/login", data={"username": "testuser", "password": "testpassword"}
+        "/api/users/login", data={"username": username, "password": "testpassword"}
     )
     token = login_response.json()["access_token"]
 
@@ -255,6 +255,7 @@ def test_read_all_item_config_results_for_item_config_only_own_results(setup_dat
         f"/api/item_config_results/item_config/{item_config_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
+    print([item["user_id"] for item in response.json()])
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2

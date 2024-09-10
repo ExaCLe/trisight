@@ -51,7 +51,7 @@ def get_user_id_and_token(username="testuser"):
         },
     )
     login_response = client.post(
-        "/api/users/login", data={"username": "testuser", "password": "testpassword"}
+        "/api/users/login", data={"username": username, "password": "testpassword"}
     )
     token = login_response.json()["access_token"]
 
@@ -302,7 +302,10 @@ def test_delete_test_config_endpoint_unauthorized(setup_database):
 
 
 def test_delete_test_config_endpoint_invalid_id(setup_database):
+    token, user_id = get_user_id_and_token()
     # Try to delete a test config with an invalid ID
     invalid_id = 928289238
-    delete_response = client.delete(f"/api/test_configs/{invalid_id}")
+    delete_response = client.delete(
+        f"/api/test_configs/{invalid_id}", headers={"Authorization": f"Bearer {token}"}
+    )
     assert delete_response.status_code == 404

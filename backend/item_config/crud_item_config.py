@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from backend import models, schemas
 
 
-def create_item_config(db: Session, item_config: schemas.ItemConfig):
-    db_item_config = models.ItemConfig(**item_config.model_dump())
+def create_item_config(db: Session, item_config: schemas.ItemConfig, user: models.User):
+    db_item_config = models.ItemConfig(**item_config.model_dump(), user_id=user.id)
     db.add(db_item_config)
     try:
         db.commit()
@@ -31,14 +31,20 @@ def get_item_config_by_id(db: Session, item_config_id: int):
 
 
 def update_item_config(
-    db: Session, item_config_id: int, item_config: schemas.ItemConfig
+    db: Session, item_config_id: int, item_config: schemas.ItemConfig, user: models.User
 ):
     db_item_config = (
         db.query(models.ItemConfig)
         .filter(models.ItemConfig.id == item_config_id)
         .first()
     )
+
     if db_item_config:
+        if db_item_config.user_id != user.id:
+            raise HTTPException(
+                status_code=401,
+                detail=f"User {user.id} does not have access to Item Config with id {item_config_id}",
+            )
         db_item_config.triangle_size = item_config.triangle_size
         db_item_config.triangle_color = item_config.triangle_color
         db_item_config.circle_size = item_config.circle_size
@@ -50,13 +56,19 @@ def update_item_config(
     return db_item_config
 
 
-def delete_item_config(db: Session, item_config_id: int):
+def delete_item_config(db: Session, item_config_id: int, user: models.User):
     db_item_config = (
         db.query(models.ItemConfig)
         .filter(models.ItemConfig.id == item_config_id)
         .first()
     )
+
     if db_item_config:
+        if db_item_config.user_id != user.id:
+            raise HTTPException(
+                status_code=401,
+                detail=f"User {user.id} does not have access to Item Config with id {item_config_id}",
+            )
         db.delete(db_item_config)
 
         # also delete all item config results associated with this item config

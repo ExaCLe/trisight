@@ -64,10 +64,15 @@ class ItemConfig(Base):
         String, CheckConstraint("orientation IN ('N', 'E', 'S', 'W')")
     )
 
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("user.id"), nullable=True)
+
     # Relationship with ItemConfigResult
     item_config_results: Mapped[List["ItemConfigResult"]] = relationship(
         back_populates="item_config"
     )
+
+    # Relationship with User
+    user: Mapped[Optional["User"]] = relationship(back_populates="item_configs")
 
     # Many-to-many relationship with TestConfig
     test_configs: Mapped[List["TestConfig"]] = relationship(
@@ -91,6 +96,9 @@ class User(Base):
     item_config_results: Mapped[List["ItemConfigResult"]] = relationship(
         back_populates="user"
     )
+
+    # Relationship with ItemConfig
+    item_configs: Mapped[List["ItemConfig"]] = relationship(back_populates="user")
 
     # Relationship with TestConfig and TestConfigResult
     test_configs: Mapped[List["TestConfig"]] = relationship(back_populates="user")

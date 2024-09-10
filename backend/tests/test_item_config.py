@@ -42,17 +42,17 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
-def get_user_id_and_token():
+def get_user_id_and_token(username="testuser"):
     register_response = client.post(
         "/api/users/register",
         json={
-            "username": "testuser",
+            "username": username,
             "email": "test@test.de",
             "password": "testpassword",
         },
     )
     login_response = client.post(
-        "/api/users/login", data={"username": "testuser", "password": "testpassword"}
+        "/api/users/login", data={"username": username, "password": "testpassword"}
     )
     token = login_response.json()["access_token"]
 
@@ -291,7 +291,7 @@ def test_update_item_config_endpoint(setup_database):
 
 def test_update_item_config_endpoint_unauthorized(setup_database):
     token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token()
+    token2, user_id2 = get_user_id_and_token("testuser2")
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -367,7 +367,7 @@ def test_delete_item_config_endpoint(setup_database):
 
 def test_delete_item_config_endpoint_unauthorized(setup_database):
     token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token()
+    token2, user_id2 = get_user_id_and_token("testuser2")
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
