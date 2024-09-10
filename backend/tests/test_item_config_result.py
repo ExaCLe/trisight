@@ -1,32 +1,45 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-from backend.database import Base, engine, SessionLocal
+from backend.models import Base
 from backend.main import app
 from backend.utils import get_db
 
-# Create a TestClient using the FastAPI app
-client = TestClient(app)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./temp_for_tests.db"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+)
+
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-# Create the test database and tables before running tests
-@pytest.fixture(scope="module")
+Base.metadata.create_all(bind=engine)
+
+
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
+
+
+@pytest.fixture
 def setup_database():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
 
 
-# Dependency override to use a fresh session for each test
-def override_get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
 app.dependency_overrides[get_db] = override_get_db
+
+client = TestClient(app)
 
 
 def insert_item_config_to_db():
@@ -36,7 +49,7 @@ def insert_item_config_to_db():
         "circle_size": 50,
         "circle_color": "#00FF00",
         "time_visible_ms": 1000,
-        "orientation": "N"
+        "orientation": "N",
     }
     return client.post("/api/item_configs/", json=item_config_data)
 
@@ -48,7 +61,7 @@ def test_create_item_config_result(setup_database):
         "item_config_id": item_config_id,
         "correct": True,
         "reaction_time_ms": 100,
-        "response": "N"
+        "response": "N",
     }
     response = client.post("/api/item_config_results/", json=item_config_result_data)
     assert response.status_code == 200
@@ -67,7 +80,7 @@ def test_create_item_config_result_invalid_data(setup_database):
         "item_config_id": item_config_id,
         "correct": True,
         "reaction_time_ms": "invalid",
-        "response": "N"
+        "response": "N",
     }
     response = client.post("/api/item_config_results/", json=item_config_result_data)
     assert response.status_code == 422
@@ -79,7 +92,7 @@ def test_insert_with_invalid_item_config_id(setup_database):
         "item_config_id": 98275982794,
         "correct": True,
         "reaction_time_ms": 100,
-        "response": "N"
+        "response": "N",
     }
     response = client.post("/api/item_config_results/", json=item_config_result_data)
     assert response.status_code == 422
@@ -93,7 +106,7 @@ def test_read_all_item_config_results_for_item_config(setup_database):
         "item_config_id": item_config_id,
         "correct": True,
         "reaction_time_ms": 100,
-        "response": "N"
+        "response": "N",
     }
     client.post("/api/item_config_results/", json=item_config_result_data)
     client.post("/api/item_config_results/", json=item_config_result_data)
@@ -120,7 +133,7 @@ def test_read_item_config_results(setup_database):
         "item_config_id": item_config_id,
         "correct": True,
         "reaction_time_ms": 100,
-        "response": "N"
+        "response": "N",
     }
     response = client.post("/api/item_config_results/", json=item_config_result_data)
     response = client.get(f"/api/item_config_results/{response.json()['id']}")

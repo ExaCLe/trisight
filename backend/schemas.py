@@ -28,8 +28,17 @@ class ItemConfigResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class User(BaseModel):
-    name: str
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+
+class UserToRegister(BaseModel):
+    username: str
     email: str
     password: str
 
@@ -39,7 +48,7 @@ class User(BaseModel):
 class UserResponse(BaseModel):
     id: int
     created: datetime
-    name: str
+    username: str
     email: str
 
     model_config = ConfigDict(from_attributes=True)

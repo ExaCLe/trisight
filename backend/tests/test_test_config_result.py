@@ -1,32 +1,40 @@
+import os 
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-from backend.database import Base, engine, SessionLocal
+from backend.models import Base
 from backend.main import app
 from backend.utils import get_db
 
-# Create a TestClient using the FastAPI app
-client = TestClient(app)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./temp_for_tests.db"
 
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+)
 
-# Create the test database and tables before running tests
-@pytest.fixture(scope="module")
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+@pytest.fixture
 def setup_database():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
 
-
-# Dependency override to use a fresh session for each test
 def override_get_db():
     try:
-        db = SessionLocal()
+        db = TestingSessionLocal()
         yield db
     finally:
         db.close()
 
 
 app.dependency_overrides[get_db] = override_get_db
+
+client = TestClient(app)
 
 
 def insert_test_config_to_db():
@@ -36,10 +44,7 @@ def insert_test_config_to_db():
         response = insert_item_config_to_db()
         item_config_ids.append(response.json()["id"])
 
-    test_config_data = {
-        "name": "Test Config 1",
-        "item_config_ids": item_config_ids
-    }
+    test_config_data = {"name": "Test Config 1", "item_config_ids": item_config_ids}
     return client.post("/api/test_configs/", json=test_config_data)
 
 
@@ -50,7 +55,7 @@ def insert_item_config_to_db():
         "circle_size": 50,
         "circle_color": "#00FF00",
         "time_visible_ms": 1000,
-        "orientation": "N"
+        "orientation": "N",
     }
     return client.post("/api/item_configs/", json=item_config_data)
 
@@ -67,9 +72,11 @@ def insert_test_config_result_to_db():
             "item_config_id": item_config_id,
             "correct": True,
             "reaction_time_ms": 100,
-            "response": "N"
+            "response": "N",
         }
-        item_config_result_response = client.post("/api/item_config_results/", json=item_config_result_data)
+        item_config_result_response = client.post(
+            "/api/item_config_results/", json=item_config_result_data
+        )
         item_config_result_ids.append(item_config_result_response.json()["id"])
 
     test_config_result_data = {
@@ -77,7 +84,7 @@ def insert_test_config_result_to_db():
         "correct_answers": 2,
         "wrong_answers": 0,
         "item_config_result_ids": item_config_result_ids,
-        "time": "2024-01-01T00:00:00"
+        "time": "2024-01-01T00:00:00",
     }
     return client.post("/api/test_config_results/", json=test_config_result_data)
 
@@ -101,7 +108,7 @@ def test_create_test_config_result_invalid_data(setup_database):
         "correct_answers": 2,
         "wrong_answers": 0,
         "item_config_result_ids": "invalid_id",  # Invalid data
-        "time": "2024-01-01T00:00:00"
+        "time": "2024-01-01T00:00:00",
     }
     response = client.post("/api/test_config_results/", json=test_config_result_data)
     assert response.status_code == 422
@@ -113,7 +120,7 @@ def test_insert_test_config_result_with_invalid_test_config_id(setup_database):
         "correct_answers": 2,
         "wrong_answers": 0,
         "item_config_result_ids": [],
-        "time": "2024-01-01T00:00:00"
+        "time": "2024-01-01T00:00:00",
     }
     response = client.post("/api/test_config_results/", json=test_config_result_data)
     assert response.status_code == 422
@@ -160,11 +167,15 @@ def test_update_test_config_result(setup_database):
         "test_config_id": response.json()["test_config_id"],
         "correct_answers": 1,
         "wrong_answers": 1,
-        "item_config_result_ids": [item['id'] for item in response.json()["item_config_results"]],
-        "time": "2024-01-01T12:00:00"
+        "item_config_result_ids": [
+            item["id"] for item in response.json()["item_config_results"]
+        ],
+        "time": "2024-01-01T12:00:00",
     }
 
-    response = client.put(f"/api/test_config_results/{test_config_result_id}", json=update_data)
+    response = client.put(
+        f"/api/test_config_results/{test_config_result_id}", json=update_data
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["correct_answers"] == 1
@@ -178,7 +189,7 @@ def test_update_test_config_result_invalid_id(setup_database):
         "correct_answers": 1,
         "wrong_answers": 1,
         "item_config_result_ids": [],
-        "time": "2024-01-01T12:00:00"
+        "time": "2024-01-01T12:00:00",
     }
 
     response = client.put("/api/test_config_results/928289238", json=update_data)

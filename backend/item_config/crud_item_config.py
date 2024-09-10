@@ -6,9 +6,7 @@ from backend import models, schemas
 
 
 def create_item_config(db: Session, item_config: schemas.ItemConfig):
-    db_item_config = models.ItemConfig(
-        **item_config.model_dump()
-    )
+    db_item_config = models.ItemConfig(**item_config.model_dump())
     db.add(db_item_config)
     try:
         db.commit()
@@ -25,11 +23,21 @@ def get_all_item_configs(db: Session):
 
 
 def get_item_config_by_id(db: Session, item_config_id: int):
-    return db.query(models.ItemConfig).filter(models.ItemConfig.id == item_config_id).first()
+    return (
+        db.query(models.ItemConfig)
+        .filter(models.ItemConfig.id == item_config_id)
+        .first()
+    )
 
 
-def update_item_config(db: Session, item_config_id: int, item_config: schemas.ItemConfig):
-    db_item_config = db.query(models.ItemConfig).filter(models.ItemConfig.id == item_config_id).first()
+def update_item_config(
+    db: Session, item_config_id: int, item_config: schemas.ItemConfig
+):
+    db_item_config = (
+        db.query(models.ItemConfig)
+        .filter(models.ItemConfig.id == item_config_id)
+        .first()
+    )
     if db_item_config:
         db_item_config.triangle_size = item_config.triangle_size
         db_item_config.triangle_color = item_config.triangle_color
@@ -43,12 +51,18 @@ def update_item_config(db: Session, item_config_id: int, item_config: schemas.It
 
 
 def delete_item_config(db: Session, item_config_id: int):
-    db_item_config = db.query(models.ItemConfig).filter(models.ItemConfig.id == item_config_id).first()
+    db_item_config = (
+        db.query(models.ItemConfig)
+        .filter(models.ItemConfig.id == item_config_id)
+        .first()
+    )
     if db_item_config:
         db.delete(db_item_config)
 
         # also delete all item config results associated with this item config
-        db.query(models.ItemConfigResult).filter(models.ItemConfigResult.item_config_id == item_config_id).delete()
+        db.query(models.ItemConfigResult).filter(
+            models.ItemConfigResult.item_config_id == item_config_id
+        ).delete()
 
         db.commit()
     return db_item_config
