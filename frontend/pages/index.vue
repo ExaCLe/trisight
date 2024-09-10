@@ -13,10 +13,25 @@
         <div class="info-container">
           <h1>Wie schnell ist dein Auge...?</h1>
           <div class="button-group">
-            <NuxtLink :to="{ path: '/playscreen', query: { isTrisightMode: false } }" class="test-button">
+            <NuxtLink
+              :to="{ path: '/playscreen', query: { isTrisightMode: true } }"
+              class="button-quick"
+            >
+              Quick Start
+            </NuxtLink>
+            <NuxtLink
+              :to="{
+                path: '/vision-test-options',
+                query: { isTrisightMode: false },
+              }"
+              class="test-button"
+            >
               Vision Test
             </NuxtLink>
-            <NuxtLink :to="{ path: '/playscreen', query: { isTrisightMode: true } }" class="test-button">
+            <NuxtLink
+              :to="{ path: '/trisight-mode-options', query: { isTrisightMode: true } }"
+              class="test-button"
+            >
               Trisight Mode
             </NuxtLink>
           </div>
@@ -73,7 +88,11 @@
       </div>
       <div class="image-container">
         <div class="circle-background">
-          <img class="triangle-image-2" src="../images/blue-neon-triangle.png" alt="Blue Neon Triangle" />
+          <img
+            class="triangle-image-2"
+            src="../images/blue-neon-triangle.png"
+            alt="Blue Neon Triangle"
+          />
         </div>
       </div>
     </div>
@@ -98,8 +117,8 @@ export default {
 .intro-section {
   background-color: #185262;
   background-image: url(../images\trisight-background-home-desktop.png);
-  background-repeat: no-repeat; 
-  background-size: cover; 
+  background-repeat: no-repeat;
+  background-size: cover;
   background-position: center;
   color: #fff8ec;
   min-height: 90vh;
@@ -133,7 +152,6 @@ export default {
   animation: rotateAndPulse 9s infinite linear;
 }
 
-
 .triangle-image-2 {
   animation: pulseSize 9s infinite linear;
   margin-bottom: 60px;
@@ -165,17 +183,18 @@ export default {
 }
 
 @keyframes pulseSize {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(0.3);
   }
   50% {
-    transform: scale(1.0);
+    transform: scale(1);
   }
 }
 
 .circle-background {
-  width: 440px;
-  height: 440px;
+  width: 340px;
+  height: 340px;
   border-radius: 50%;
   background: orange; /* Ausgangsfarbe */
   display: flex;
@@ -225,6 +244,19 @@ h1 {
 .test-button:hover {
   background-color: #0f3e4b;
   color: #fff8ec;
+}
+
+.button-quick {
+  background-color: #ffffff00;
+  color: #fff8ec;
+  border: solid 1px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s, color 0.3s;
+  width: 150px; /* Einheitliche Breite für beide Buttons */
+  text-align: center;
 }
 
 .info-section {
@@ -290,7 +322,7 @@ h1 {
     gap: 40px;
     margin-top: 0;
   }
-  
+
   .text-container {
     margin-left: 0;
     text-align: center;
@@ -352,4 +384,3 @@ h1 {
   }
 }
 </style>
-

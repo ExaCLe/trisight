@@ -4,12 +4,19 @@
     <div class="score-timer" v-if="isTrisightMode && !isGameOver">
       <div class="left-side">
         <!-- Anzeige des Game Timers als numerische Zeitangabe -->
-        <div class="game-timer">Verbleibende Zeit: {{ gameTimerDisplay }} Sekunden</div>
+        <div class="game-timer">
+          Verbleibende Zeit: {{ gameTimerDisplay }} Sekunden
+        </div>
         <div class="score">Punkte: {{ score }}</div>
       </div>
       <!-- Visuelle Darstellung des Timers als Kreis -->
       <div class="timer-wrapper">
-        <svg :width="timerSvgSize" :height="timerSvgSize" class="timer-svg" :viewBox="`0 0 ${timerSvgSize} ${timerSvgSize}`">
+        <svg
+          :width="timerSvgSize"
+          :height="timerSvgSize"
+          class="timer-svg"
+          :viewBox="`0 0 ${timerSvgSize} ${timerSvgSize}`"
+        >
           <!-- Hintergrundkreis -->
           <circle
             class="timer-background"
@@ -36,24 +43,24 @@
         :style="{
           backgroundColor: currentItem.circle_color,
           width: limitedCircleSize + 'px',
-          height: limitedCircleSize + 'px'
+          height: limitedCircleSize + 'px',
         }"
       >
         <div
           class="triangle"
-          :style="{ 
-            width: limitedTriangleSize + 'px', 
-            height: limitedTriangleSize + 'px', 
+          :style="{
+            width: limitedTriangleSize + 'px',
+            height: limitedTriangleSize + 'px',
             backgroundColor: currentItem.triangle_color,
             transform: getRotationStyle(currentItem.orientation).rotation,
-            margin: getRotationStyle(currentItem.orientation).margin
+            margin: getRotationStyle(currentItem.orientation).margin,
           }"
         ></div>
       </div>
     </div>
 
     <!-- Anweisungen für Benutzer -->
-    <div class="instructions" v-if="!isGameStarted && !isGameOver">
+    <div class="instructions" v-show="!isGameStarted && !isGameOver">
       <span>Drücke eine Taste um zu starten!</span>
     </div>
 
@@ -69,15 +76,14 @@
   </div>
 </template>
 
-
-
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRoute } from "vue-router";
 
 // Router verwenden, um den Query-Parameter zu erhalten
 const route = useRoute();
-const isTrisightMode = ref(route.query.isTrisightMode === 'true');
+const isTrisightMode = ref(route.query.isTrisightMode === "true");
+const difficulty = ref(route.query.difficulty || 'easy'); // Default to 'easy'
 
 const score = ref(0);
 const currentIndex = ref(0);
@@ -92,8 +98,12 @@ const remainingGameTime = ref(60); // Verbleibende Zeit für das Spiel in Sekund
 const randomizedItems = ref([]); // Zufällig geordnete Items
 
 // Begrenzte Größen für das Dreieck und den Kreis
-const limitedTriangleSize = computed(() => Math.min(300, Math.max(10, currentItem.value.triangle_size || 10)));
-const limitedCircleSize = computed(() => Math.min(500, Math.max(10, currentItem.value.circle_size || 10)));
+const limitedTriangleSize = computed(() =>
+  Math.min(300, Math.max(10, currentItem.value.triangle_size || 10))
+);
+const limitedCircleSize = computed(() =>
+  Math.min(500, Math.max(10, currentItem.value.circle_size || 10))
+);
 
 // Berechnung des Radius und der Größe des Timer-SVGs
 const timerRadius = computed(() => 50); // Feste Größe des Kreises
@@ -131,12 +141,28 @@ const startGameTimer = () => {
   }, 1000); // Der Timer reduziert sich jede Sekunde
 };
 
+// Funktion zum Abrufen der Daten basierend auf dem Schwierigkeitsgrad
 const fetchData = async () => {
   try {
-    const response = await $fetch('http://localhost:8000/api/test_configs/1');
+    let endpoint;
+    if (isTrisightMode.value) {
+      switch (difficulty.value) {
+        case 'medium':
+          endpoint = "http://localhost:8000/api/test_configs/3";
+          break;
+        case 'hard':
+          endpoint = "http://localhost:8000/api/test_configs/4";
+          break;
+        default:
+          endpoint = "http://localhost:8000/api/test_configs/1"; // Leicht (Standard)
+      }
+    } else {
+      endpoint = "http://localhost:8000/api/test_configs/2"; // Endpunkt für den Standardmodus
+    }
+    const response = await $fetch(endpoint);
     return response;
   } catch (error) {
-    console.error('Fehler beim Abrufen der Konfigurationen:', error);
+    console.error("Fehler beim Abrufen der Konfigurationen:", error);
     return null;
   }
 };
@@ -146,8 +172,10 @@ console.log(data);
 
 const initializeGame = () => {
   if (data && data.item_configs.length > 0) {
-    randomizedItems.value = shuffleArray([...data.item_configs]); // Zufällig gemischte Kopie der item_configs
-    currentItem.value = randomizedItems.value[0]; // Setze das erste zufällig gemischte Item als Start
+    randomizedItems.value = isTrisightMode.value
+      ? shuffleArray([...data.item_configs]) // Zufällig gemischte Kopie der item_configs für Trisight Mode
+      : [...data.item_configs]; // Kopie der item_configs für den Standardmodus
+    currentItem.value = randomizedItems.value[0]; // Setze das erste Item als Start
     totalTime.value = currentItem.value.time_visible_ms;
     remainingTime.value = totalTime.value;
   }
@@ -177,26 +205,26 @@ const handleKeyPress = (event) => {
   if (!isGameStarted.value) {
     startGame();
   }
-  
+
   if (isGameOver.value) return; // Wenn das Spiel vorbei ist, keine Eingaben verarbeiten
 
   // Verhindere das Standardverhalten (z.B. Scrollen)
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
     event.preventDefault();
   }
 
   switch (event.key) {
-    case 'ArrowUp':
-      checkAnswer('N');
+    case "ArrowUp":
+      checkAnswer("N");
       break;
-    case 'ArrowDown':
-      checkAnswer('S');
+    case "ArrowDown":
+      checkAnswer("S");
       break;
-    case 'ArrowLeft':
-      checkAnswer('W');
+    case "ArrowLeft":
+      checkAnswer("W");
       break;
-    case 'ArrowRight':
-      checkAnswer('E');
+    case "ArrowRight":
+      checkAnswer("E");
       break;
   }
 };
@@ -226,13 +254,13 @@ const endGame = () => {
   isGameOver.value = true; // Setze den Spielzustand auf "vorbei"
   clearInterval(timer.value); // Stoppe den Timer
   clearInterval(gameTimer.value); // Stoppe den Game Timer
-  console.log('Spiel beendet. Punktestand: ' + score.value);
+  console.log("Spiel beendet. Punktestand: " + score.value);
   removeKeyListener(); // Entferne die Event-Listener für die Pfeiltasten
 };
 
 const removeKeyListener = () => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('keydown', handleKeyPress);
+  if (typeof window !== "undefined") {
+    window.removeEventListener("keydown", handleKeyPress);
   }
 };
 
@@ -245,43 +273,43 @@ const startNewRound = () => {
   isGameStarted.value = false;
   initializeGame();
 
-  if (typeof window !== 'undefined') {
-    window.addEventListener('keydown', handleKeyPress); // Event-Listener wieder hinzufügen
+  if (typeof window !== "undefined") {
+    window.addEventListener("keydown", handleKeyPress); // Event-Listener wieder hinzufügen
   }
 };
 
 const getRotationStyle = (orientation) => {
-  let rotation = '';
-  let margin = '';
+  let rotation = "";
+  let margin = "";
 
   switch (orientation) {
-    case 'N':
-      rotation = 'rotate(0deg)'; // Norden
-      margin = '0 0 10% 0'; // margin-bottom
+    case "N":
+      rotation = "rotate(0deg)"; // Norden
+      margin = "0 0 10% 0"; // margin-bottom
       break;
-    case 'E':
-      rotation = 'rotate(90deg)'; // Osten
-      margin = '0 0 0 10%'; 
+    case "E":
+      rotation = "rotate(90deg)"; // Osten
+      margin = "0 0 0 10%";
       break;
-    case 'S':
-      rotation = 'rotate(180deg)'; // Süden
-      margin = '10% 0 0 0'; // margin-top
+    case "S":
+      rotation = "rotate(180deg)"; // Süden
+      margin = "10% 0 0 0"; // margin-top
       break;
-    case 'W':
-      rotation = 'rotate(270deg)'; // Westen
-      margin = '0 10% 0 0'; 
+    case "W":
+      rotation = "rotate(270deg)"; // Westen
+      margin = "0 10% 0 0";
       break;
     default:
-      rotation = 'rotate(0deg)'; // Standardmäßig keine Drehung
-      margin = '0 0 10% 0'; // Standardmäßig margin-bottom
+      rotation = "rotate(0deg)"; // Standardmäßig keine Drehung
+      margin = "0 0 10% 0"; // Standardmäßig margin-bottom
   }
 
   return { rotation, margin };
 };
 
 onMounted(() => {
-  if (typeof window !== 'undefined') {
-    window.addEventListener('keydown', handleKeyPress);
+  if (typeof window !== "undefined") {
+    window.addEventListener("keydown", handleKeyPress);
   }
   initializeGame();
 });
@@ -291,7 +319,6 @@ onUnmounted(() => {
 });
 </script>
 
-
 <style scoped>
 .playscreen {
   display: flex;
@@ -299,7 +326,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   height: 90vh;
-  background-color: #fff8ec
+  background-color: #fff8ec;
 }
 
 .score-timer {
@@ -367,23 +394,20 @@ onUnmounted(() => {
   align-items: center;
   border-radius: 50%;
   transition: background-color 0s ease-in-out;
-  position: relative; 
+  position: relative;
 }
 
 .triangle {
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   transition: transform 0s ease, width 0s ease, height 0s ease;
-  position: absolute; 
+  position: absolute;
 }
 
 .instructions {
-  margin-top: 10px; 
-  font-size: 28px;
+  font-size: 26px;
   color: #353535;
-  min-height: 30px; 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  bottom: 6%;
 }
 
 .timer {
@@ -428,7 +452,7 @@ onUnmounted(() => {
   color: #fff8ec;
   padding: 10px 20px;
   border: none;
-  border-radius: 20px;
+  border-radius: 40px;
   cursor: pointer;
   font-size: 18px;
   transition: background-color 0.3s, color 0.3s;
@@ -438,6 +462,4 @@ onUnmounted(() => {
   background-color: #0f3e4b;
   color: #fff;
 }
-
-
 </style>
