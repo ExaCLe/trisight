@@ -1,10 +1,12 @@
 <template>
   <div class="playscreen">
     <!-- Nur anzeigen, wenn isTrisightMode true ist -->
-    <div class="score-timer" v-if="isTrisightMode">
-      <!-- Anzeige des Game Timers als numerische Zeitangabe -->
-      <div class="game-timer">Verbleibende Zeit: {{ gameTimerDisplay }} Sekunden</div>
-      <div class="score">Punkte: {{ score }}</div>
+    <div class="score-timer" v-if="isTrisightMode && !isGameOver">
+      <div class="left-side">
+        <!-- Anzeige des Game Timers als numerische Zeitangabe -->
+        <div class="game-timer">Verbleibende Zeit: {{ gameTimerDisplay }} Sekunden</div>
+        <div class="score">Punkte: {{ score }}</div>
+      </div>
       <!-- Visuelle Darstellung des Timers als Kreis -->
       <div class="timer-wrapper">
         <svg :width="timerSvgSize" :height="timerSvgSize" class="timer-svg" :viewBox="`0 0 ${timerSvgSize} ${timerSvgSize}`">
@@ -28,7 +30,7 @@
     </div>
 
     <!-- Darstellung des aktuellen Spielzustands (Triangle und Circle) -->
-    <div class="triangle-container">
+    <div class="triangle-container" v-if="!isGameOver">
       <div
         class="circle-background"
         :style="{
@@ -51,11 +53,23 @@
     </div>
 
     <!-- Anweisungen für Benutzer -->
-    <div class="instructions">
-      <span v-if="!isGameStarted">Drücke eine Pfeiltaste um zu starten!</span>
+    <div class="instructions" v-if="!isGameStarted && !isGameOver">
+      <span>Drücke eine Taste um zu starten!</span>
+    </div>
+
+    <!-- Spielende-Anzeige -->
+    <div class="game-over" v-if="isGameOver && isTrisightMode">
+      <div class="final-score">Dein Score: {{ score }}</div>
+      <!-- Neue Buttons für Home und Neue Runde -->
+      <div class="button-group">
+        <NuxtLink to="/" class="button">Home</NuxtLink>
+        <button @click="startNewRound" class="button">Neue Runde</button>
+      </div>
     </div>
   </div>
 </template>
+
+
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
@@ -75,6 +89,7 @@ const totalTime = ref(0); // Speichert die Gesamtzeit für den Timer
 const isGameOver = ref(false); // Neuer Zustand zur Überprüfung des Spielendes
 const isGameStarted = ref(false); // Neuer Zustand zur Überprüfung, ob das Spiel gestartet wurde
 const remainingGameTime = ref(60); // Verbleibende Zeit für das Spiel in Sekunden
+const randomizedItems = ref([]); // Zufällig geordnete Items
 
 // Begrenzte Größen für das Dreieck und den Kreis
 const limitedTriangleSize = computed(() => Math.min(300, Math.max(10, currentItem.value.triangle_size || 10)));
@@ -93,6 +108,15 @@ const timerDashOffset = computed(() => {
 
 // Anzeige des Game Timers als numerische Zeitangabe
 const gameTimerDisplay = computed(() => remainingGameTime.value);
+
+// Funktion zum Mischen des Arrays
+const shuffleArray = (array) => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+};
 
 // Timer-Logik für das Trisight Mode Spiel
 const startGameTimer = () => {
@@ -122,7 +146,8 @@ console.log(data);
 
 const initializeGame = () => {
   if (data && data.item_configs.length > 0) {
-    currentItem.value = data.item_configs[0]; // Setze das erste Item als Start
+    randomizedItems.value = shuffleArray([...data.item_configs]); // Zufällig gemischte Kopie der item_configs
+    currentItem.value = randomizedItems.value[0]; // Setze das erste zufällig gemischte Item als Start
     totalTime.value = currentItem.value.time_visible_ms;
     remainingTime.value = totalTime.value;
   }
@@ -140,12 +165,12 @@ const startTimer = () => {
   clearInterval(timer.value);
   timer.value = setInterval(() => {
     if (remainingTime.value > 0) {
-      remainingTime.value -= 100;
+      remainingTime.value -= 10; // Aktualisierungsrate auf 10 ms gesetzt
     } else {
       clearInterval(timer.value);
       checkAnswer();
     }
-  }, 100);
+  }, 10); // Timer-Intervall auf 10 ms gesetzt
 };
 
 const handleKeyPress = (event) => {
@@ -184,9 +209,9 @@ const checkAnswer = (direction) => {
 };
 
 const loadNextItem = () => {
-  if (currentIndex.value < data.item_configs.length - 1) {
+  if (currentIndex.value < randomizedItems.value.length - 1) {
     currentIndex.value++;
-    currentItem.value = data.item_configs[currentIndex.value];
+    currentItem.value = randomizedItems.value[currentIndex.value];
     totalTime.value = currentItem.value.time_visible_ms;
     remainingTime.value = totalTime.value;
     if (isTrisightMode.value) {
@@ -211,6 +236,20 @@ const removeKeyListener = () => {
   }
 };
 
+const startNewRound = () => {
+  score.value = 0;
+  currentIndex.value = 0;
+  remainingTime.value = 0;
+  remainingGameTime.value = 60;
+  isGameOver.value = false;
+  isGameStarted.value = false;
+  initializeGame();
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', handleKeyPress); // Event-Listener wieder hinzufügen
+  }
+};
+
 const getRotationStyle = (orientation) => {
   let rotation = '';
   let margin = '';
@@ -218,23 +257,23 @@ const getRotationStyle = (orientation) => {
   switch (orientation) {
     case 'N':
       rotation = 'rotate(0deg)'; // Norden
-      margin = '0 0 5% 0'; // margin-bottom
+      margin = '0 0 10% 0'; // margin-bottom
       break;
     case 'E':
       rotation = 'rotate(90deg)'; // Osten
-      margin = '0 0 0 5%'; 
+      margin = '0 0 0 10%'; 
       break;
     case 'S':
       rotation = 'rotate(180deg)'; // Süden
-      margin = '5% 0 0 0'; // margin-top
+      margin = '10% 0 0 0'; // margin-top
       break;
     case 'W':
       rotation = 'rotate(270deg)'; // Westen
-      margin = '0 5% 0 0'; 
+      margin = '0 10% 0 0'; 
       break;
     default:
       rotation = 'rotate(0deg)'; // Standardmäßig keine Drehung
-      margin = '0 0 5% 0'; // Standardmäßig margin-bottom
+      margin = '0 0 10% 0'; // Standardmäßig margin-bottom
   }
 
   return { rotation, margin };
@@ -252,6 +291,7 @@ onUnmounted(() => {
 });
 </script>
 
+
 <style scoped>
 .playscreen {
   display: flex;
@@ -259,22 +299,27 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   height: 90vh;
-  background-color: #f4f4f4;
+  background-color: #fff8ec
 }
 
 .score-timer {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
   width: 80%;
   margin-bottom: 20px;
   position: relative;
 }
 
+.left-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Linksbündige Ausrichtung */
+}
+
 .game-timer {
   font-size: 22px;
-  color: #181818;
+  color: #363636;
   margin-bottom: 10px;
 }
 
@@ -294,14 +339,14 @@ onUnmounted(() => {
 
 .timer-background {
   fill: none;
-  stroke: #ddd;
+  stroke: #185262d2;
   stroke-width: 5;
 }
 
 .timer-path {
   fill: none;
-  stroke: #181818;
-  stroke-width: 5;
+  stroke: #fff8ec;
+  stroke-width: 10;
   stroke-dasharray: 314; /* Beispiel für einen Umfang bei Radius 50 */
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
@@ -332,10 +377,10 @@ onUnmounted(() => {
 }
 
 .instructions {
-  margin-top: 50px; /* Statische Höhe für die Anweisungen beibehalten */
-  font-size: 22px;
-  color: #333;
-  min-height: 30px; /* Mindesthöhe für den Anweisungstext, um Layoutänderungen zu vermeiden */
+  margin-top: 10px; 
+  font-size: 28px;
+  color: #353535;
+  min-height: 30px; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -345,4 +390,54 @@ onUnmounted(() => {
   font-size: 20px;
   color: #181818;
 }
+
+.game-over {
+  display: flex;
+  flex-direction: column; /* Buttons unter dem Score */
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: #185262;
+  font-size: 40px;
+  font-weight: bold;
+  background-color: #fff8ec; /* Hintergrundfarbe bei Spielende */
+  text-align: center;
+}
+
+.final-score {
+  margin-bottom: 20px; /* Abstand zwischen Score und Buttons */
+  animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.button-group {
+  display: flex;
+  gap: 20px;
+}
+
+.button {
+  background-color: #185262;
+  color: #fff8ec;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.button:hover {
+  background-color: #0f3e4b;
+  color: #fff;
+}
+
+
 </style>
