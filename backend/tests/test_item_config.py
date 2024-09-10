@@ -42,7 +42,25 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
+def get_user_id_and_token():
+    register_response = client.post(
+        "/api/users/register",
+        json={
+            "username": "testuser",
+            "email": "test@test.de",
+            "password": "testpassword",
+        },
+    )
+    login_response = client.post(
+        "/api/users/login", data={"username": "testuser", "password": "testpassword"}
+    )
+    token = login_response.json()["access_token"]
+
+    return token, register_response.json()["id"]
+
+
 def test_create_item_config_endpoint(setup_database):
+    token, user_id = get_user_id_and_token()
     item_config_data = {
         "triangle_size": 100,
         "triangle_color": "#FF0000",
@@ -51,7 +69,11 @@ def test_create_item_config_endpoint(setup_database):
         "time_visible_ms": 1000,
         "orientation": "N",
     }
-    response = client.post("/api/item_configs/", json=item_config_data)
+    response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["triangle_size"] == item_config_data["triangle_size"]
@@ -60,9 +82,28 @@ def test_create_item_config_endpoint(setup_database):
     assert data["circle_color"] == item_config_data["circle_color"]
     assert data["time_visible_ms"] == item_config_data["time_visible_ms"]
     assert data["orientation"] == item_config_data["orientation"]
+    assert data["user_id"] == user_id
+
+
+def test_create_item_config_endpoint_unauthorized(setup_database):
+    item_config_data = {
+        "triangle_size": 100,
+        "triangle_color": "#FF0000",
+        "circle_size": 50,
+        "circle_color": "#00FF00",
+        "time_visible_ms": 1000,
+        "orientation": "N",
+    }
+    response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer invalidtoken"},
+    )
+    assert response.status_code == 401
 
 
 def test_create_item_config_endpoint_invalid_data(setup_database):
+    token, user_id = get_user_id_and_token()
     item_config_data = {
         "triangle_size": 100,
         "triangle_color": "#FF0000",
@@ -71,11 +112,16 @@ def test_create_item_config_endpoint_invalid_data(setup_database):
         "time_visible_ms": "invalid",
         "orientation": "N",
     }
-    response = client.post("/api/item_configs/", json=item_config_data)
+    response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert response.status_code == 422
 
 
 def test_create_item_config_endpoint_invalid_orientation(setup_database):
+    token, user_id = get_user_id_and_token()
     item_config_data = {
         "triangle_size": 100,
         "triangle_color": "#FF0000",
@@ -84,11 +130,16 @@ def test_create_item_config_endpoint_invalid_orientation(setup_database):
         "time_visible_ms": 1000,
         "orientation": "invalid",
     }
-    response = client.post("/api/item_configs/", json=item_config_data)
+    response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert response.status_code == 422
 
 
 def test_create_item_config_endpoint_invalid_length(setup_database):
+    token, user_id = get_user_id_and_token()
     item_config_data = {
         "triangle_size": -1,
         "triangle_color": "#FF0000",
@@ -97,7 +148,11 @@ def test_create_item_config_endpoint_invalid_length(setup_database):
         "time_visible_ms": 1000,
         "orientation": "N",
     }
-    response = client.post("/api/item_configs/", json=item_config_data)
+    response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert response.status_code == 422
 
     item_config_data = {
@@ -109,11 +164,16 @@ def test_create_item_config_endpoint_invalid_length(setup_database):
         "orientation": "N",
     }
 
-    response = client.post("/api/item_configs/", json=item_config_data)
+    response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert response.status_code == 422
 
 
 def test_read_item_configs_endpoint(setup_database):
+    token, user_id = get_user_id_and_token()
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -123,7 +183,11 @@ def test_read_item_configs_endpoint(setup_database):
         "time_visible_ms": 1000,
         "orientation": "N",
     }
-    create_response = client.post("/api/item_configs/", json=item_config_data)
+    create_response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert create_response.status_code == 200
 
     # Now check that the item config is within the list of all item configs
@@ -139,10 +203,12 @@ def test_read_item_configs_endpoint(setup_database):
             assert item_config["circle_color"] == item_config_data["circle_color"]
             assert item_config["time_visible_ms"] == item_config_data["time_visible_ms"]
             assert item_config["orientation"] == item_config_data["orientation"]
+            assert item_config["user_id"] == user_id
             break
 
 
 def test_read_item_config_by_id_endpoint(setup_database):
+    token, user_id = get_user_id_and_token()
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -152,7 +218,11 @@ def test_read_item_config_by_id_endpoint(setup_database):
         "time_visible_ms": 1000,
         "orientation": "N",
     }
-    create_response = client.post("/api/item_configs/", json=item_config_data)
+    create_response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert create_response.status_code == 200
     item_config_id = create_response.json()["id"]
 
@@ -166,6 +236,7 @@ def test_read_item_config_by_id_endpoint(setup_database):
     assert data["circle_color"] == item_config_data["circle_color"]
     assert data["time_visible_ms"] == item_config_data["time_visible_ms"]
     assert data["orientation"] == item_config_data["orientation"]
+    assert data["user_id"] == user_id
 
 
 def test_read_item_config_by_id_endpoint_invalid_id(setup_database):
@@ -175,6 +246,7 @@ def test_read_item_config_by_id_endpoint_invalid_id(setup_database):
 
 
 def test_update_item_config_endpoint(setup_database):
+    token, user_id = get_user_id_and_token()
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -184,7 +256,11 @@ def test_update_item_config_endpoint(setup_database):
         "time_visible_ms": 1000,
         "orientation": "N",
     }
-    create_response = client.post("/api/item_configs/", json=item_config_data)
+    create_response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert create_response.status_code == 200
     item_config_id = create_response.json()["id"]
 
@@ -198,7 +274,9 @@ def test_update_item_config_endpoint(setup_database):
         "orientation": "E",
     }
     update_response = client.put(
-        f"/api/item_configs/{item_config_id}", json=update_data
+        f"/api/item_configs/{item_config_id}",
+        json=update_data,
+        headers={"Authorization": f"Bearer {token}"},
     )
     assert update_response.status_code == 200
     data = update_response.json()
@@ -208,9 +286,12 @@ def test_update_item_config_endpoint(setup_database):
     assert data["circle_color"] == update_data["circle_color"]
     assert data["time_visible_ms"] == update_data["time_visible_ms"]
     assert data["orientation"] == update_data["orientation"]
+    assert data["user_id"] == user_id
 
 
-def test_delete_item_config_endpoint(setup_database):
+def test_update_item_config_endpoint_unauthorized(setup_database):
+    token, user_id = get_user_id_and_token()
+    token2, user_id2 = get_user_id_and_token()
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -220,12 +301,55 @@ def test_delete_item_config_endpoint(setup_database):
         "time_visible_ms": 1000,
         "orientation": "N",
     }
-    create_response = client.post("/api/item_configs/", json=item_config_data)
+    create_response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert create_response.status_code == 200
+    item_config_id = create_response.json()["id"]
+
+    # Now update the item config
+    update_data = {
+        "triangle_size": 200,
+        "triangle_color": "#00FF00",
+        "circle_size": 100,
+        "circle_color": "#FF0000",
+        "time_visible_ms": 2000,
+        "orientation": "E",
+    }
+    update_response = client.put(
+        f"/api/item_configs/{item_config_id}",
+        json=update_data,
+        headers={"Authorization": f"Bearer {token2}"},
+    )
+    assert update_response.status_code == 401
+
+
+def test_delete_item_config_endpoint(setup_database):
+    token, user_id = get_user_id_and_token()
+    # First, create an item config
+    item_config_data = {
+        "triangle_size": 100,
+        "triangle_color": "#FF0000",
+        "circle_size": 50,
+        "circle_color": "#00FF00",
+        "time_visible_ms": 1000,
+        "orientation": "N",
+    }
+    create_response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert create_response.status_code == 200
     item_config_id = create_response.json()["id"]
 
     # Now delete the item config
-    delete_response = client.delete(f"/api/item_configs/{item_config_id}")
+    delete_response = client.delete(
+        f"/api/item_configs/{item_config_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert delete_response.status_code == 200
     data = delete_response.json()
     assert data["triangle_size"] == item_config_data["triangle_size"]
@@ -234,7 +358,36 @@ def test_delete_item_config_endpoint(setup_database):
     assert data["circle_color"] == item_config_data["circle_color"]
     assert data["time_visible_ms"] == item_config_data["time_visible_ms"]
     assert data["orientation"] == item_config_data["orientation"]
+    assert data["user_id"] == user_id
 
     # assert that the item config was deleted
     read_response = client.get(f"/api/item_configs/{item_config_id}")
     assert read_response.status_code == 404
+
+
+def test_delete_item_config_endpoint_unauthorized(setup_database):
+    token, user_id = get_user_id_and_token()
+    token2, user_id2 = get_user_id_and_token()
+    # First, create an item config
+    item_config_data = {
+        "triangle_size": 100,
+        "triangle_color": "#FF0000",
+        "circle_size": 50,
+        "circle_color": "#00FF00",
+        "time_visible_ms": 1000,
+        "orientation": "N",
+    }
+    create_response = client.post(
+        "/api/item_configs/",
+        json=item_config_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert create_response.status_code == 200
+    item_config_id = create_response.json()["id"]
+
+    # Now delete the item config
+    delete_response = client.delete(
+        f"/api/item_configs/{item_config_id}",
+        headers={"Authorization": f"Bearer {token2}"},
+    )
+    assert delete_response.status_code == 401
