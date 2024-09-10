@@ -2,22 +2,46 @@
   <div class="playscreen">
     <!-- Nur anzeigen, wenn isTrisightMode true ist -->
     <div class="score-timer" v-if="isTrisightMode">
+      <!-- Anzeige des Game Timers als numerische Zeitangabe -->
+      <div class="game-timer">Verbleibende Zeit: {{ gameTimerDisplay }} Sekunden</div>
       <div class="score">Punkte: {{ score }}</div>
-      <!-- Anzeige des Timers als Zahl -->
-      <div class="timer">Zeit: {{ remainingTime / 1000 }} Sekunden</div>
+      <!-- Visuelle Darstellung des Timers als Kreis -->
+      <div class="timer-wrapper">
+        <svg :width="timerSvgSize" :height="timerSvgSize" class="timer-svg" :viewBox="`0 0 ${timerSvgSize} ${timerSvgSize}`">
+          <!-- Hintergrundkreis -->
+          <circle
+            class="timer-background"
+            :cx="timerSvgCenter"
+            :cy="timerSvgCenter"
+            :r="timerRadius"
+          />
+          <!-- Fortschrittskreis -->
+          <circle
+            class="timer-path"
+            :cx="timerSvgCenter"
+            :cy="timerSvgCenter"
+            :r="timerRadius"
+            :style="{ strokeDashoffset: timerDashOffset }"
+          />
+        </svg>
+      </div>
     </div>
 
     <!-- Darstellung des aktuellen Spielzustands (Triangle und Circle) -->
     <div class="triangle-container">
       <div
         class="circle-background"
-        :style="{ backgroundColor: currentItem.circle_color, width: currentItem.circle_size + 'px', height: currentItem.circle_size + 'px' }"
+        :style="{
+          backgroundColor: currentItem.circle_color,
+          width: limitedCircleSize + 'px',
+          height: limitedCircleSize + 'px'
+        }"
       >
         <div
           class="triangle"
           :style="{ 
-            width: currentItem.triangle_size + 'px', 
-            height: currentItem.triangle_size + 'px', 
+            width: limitedTriangleSize + 'px', 
+            height: limitedTriangleSize + 'px', 
             backgroundColor: currentItem.triangle_color,
             transform: getRotationStyle(currentItem.orientation).rotation,
             margin: getRotationStyle(currentItem.orientation).margin
@@ -28,7 +52,7 @@
 
     <!-- Anweisungen für Benutzer -->
     <div class="instructions">
-      Verwenden Sie die Pfeiltasten, um die Richtung des Dreiecks zu erraten!
+      <span v-if="!isGameStarted">Drücke eine Pfeiltaste um zu starten!</span>
     </div>
   </div>
 </template>
@@ -46,8 +70,42 @@ const currentIndex = ref(0);
 const remainingTime = ref(0);
 const currentItem = ref({});
 const timer = ref(null);
+const gameTimer = ref(null); // Neuer Timer für die Spielzeit
 const totalTime = ref(0); // Speichert die Gesamtzeit für den Timer
 const isGameOver = ref(false); // Neuer Zustand zur Überprüfung des Spielendes
+const isGameStarted = ref(false); // Neuer Zustand zur Überprüfung, ob das Spiel gestartet wurde
+const remainingGameTime = ref(60); // Verbleibende Zeit für das Spiel in Sekunden
+
+// Begrenzte Größen für das Dreieck und den Kreis
+const limitedTriangleSize = computed(() => Math.min(300, Math.max(10, currentItem.value.triangle_size || 10)));
+const limitedCircleSize = computed(() => Math.min(500, Math.max(10, currentItem.value.circle_size || 10)));
+
+// Berechnung des Radius und der Größe des Timer-SVGs
+const timerRadius = computed(() => 50); // Feste Größe des Kreises
+const timerSvgSize = computed(() => timerRadius.value * 2 + 10); // SVG-Größe basierend auf dem Radius
+const timerSvgCenter = computed(() => timerRadius.value + 5); // Mittelpunkt des Kreises
+
+// Berechnung für den visuellen Timer-Balken
+const timerDashOffset = computed(() => {
+  const maxDashOffset = 2 * Math.PI * timerRadius.value; // Umfang des Kreises
+  return (remainingTime.value / totalTime.value) * maxDashOffset; // Rückwärtslaufender Balken
+});
+
+// Anzeige des Game Timers als numerische Zeitangabe
+const gameTimerDisplay = computed(() => remainingGameTime.value);
+
+// Timer-Logik für das Trisight Mode Spiel
+const startGameTimer = () => {
+  clearInterval(gameTimer.value);
+  gameTimer.value = setInterval(() => {
+    if (remainingGameTime.value > 0) {
+      remainingGameTime.value -= 1;
+    } else {
+      clearInterval(gameTimer.value);
+      endGame(); // Beendet das Spiel, wenn die Zeit abgelaufen ist
+    }
+  }, 1000); // Der Timer reduziert sich jede Sekunde
+};
 
 const fetchData = async () => {
   try {
@@ -67,9 +125,14 @@ const initializeGame = () => {
     currentItem.value = data.item_configs[0]; // Setze das erste Item als Start
     totalTime.value = currentItem.value.time_visible_ms;
     remainingTime.value = totalTime.value;
-    if (isTrisightMode.value) {
-      startTimer();
-    }
+  }
+};
+
+const startGame = () => {
+  isGameStarted.value = true;
+  if (isTrisightMode.value) {
+    startTimer();
+    startGameTimer(); // Starte den universellen Game Timer
   }
 };
 
@@ -86,7 +149,16 @@ const startTimer = () => {
 };
 
 const handleKeyPress = (event) => {
+  if (!isGameStarted.value) {
+    startGame();
+  }
+  
   if (isGameOver.value) return; // Wenn das Spiel vorbei ist, keine Eingaben verarbeiten
+
+  // Verhindere das Standardverhalten (z.B. Scrollen)
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+    event.preventDefault();
+  }
 
   switch (event.key) {
     case 'ArrowUp':
@@ -128,6 +200,7 @@ const loadNextItem = () => {
 const endGame = () => {
   isGameOver.value = true; // Setze den Spielzustand auf "vorbei"
   clearInterval(timer.value); // Stoppe den Timer
+  clearInterval(gameTimer.value); // Stoppe den Game Timer
   console.log('Spiel beendet. Punktestand: ' + score.value);
   removeKeyListener(); // Entferne die Event-Listener für die Pfeiltasten
 };
@@ -180,22 +253,58 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Dein CSS bleibt unverändert */
 .playscreen {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 90vh;
   background-color: #f4f4f4;
 }
 
 .score-timer {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   width: 80%;
   margin-bottom: 20px;
   position: relative;
+}
+
+.game-timer {
+  font-size: 22px;
+  color: #181818;
+  margin-bottom: 10px;
+}
+
+.timer-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.timer-svg {
+  width: auto;
+  height: auto;
+  position: absolute;
+}
+
+.timer-background {
+  fill: none;
+  stroke: #ddd;
+  stroke-width: 5;
+}
+
+.timer-path {
+  fill: none;
+  stroke: #181818;
+  stroke-width: 5;
+  stroke-dasharray: 314; /* Beispiel für einen Umfang bei Radius 50 */
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
 }
 
 .triangle-container {
@@ -223,9 +332,13 @@ onUnmounted(() => {
 }
 
 .instructions {
-  margin-top: 20px;
-  font-size: 18px;
+  margin-top: 50px; /* Statische Höhe für die Anweisungen beibehalten */
+  font-size: 22px;
   color: #333;
+  min-height: 30px; /* Mindesthöhe für den Anweisungstext, um Layoutänderungen zu vermeiden */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .timer {
