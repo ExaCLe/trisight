@@ -69,6 +69,12 @@ def test_register_user(setup_database):
     assert response.status_code == 400
     assert response.json()["detail"] == "User already exists"
 
+    # Test registering a user with a different username but the same email
+    user_data["username"] = "anotheruser"
+    response = client.post("/api/users/register", json=user_data)
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Email already registered"
+
 
 def test_login_user(setup_database):
     # First, register a new user

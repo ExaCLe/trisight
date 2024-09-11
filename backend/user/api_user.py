@@ -107,6 +107,13 @@ def register_user(user: UserToRegister, db: Session = Depends(get_db)) -> UserRe
             detail="User already exists",
         )
 
+    # check that the email is not already registered
+    if db.query(models.User).filter(models.User.email == user.email).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
     # hash the password and insert into the database otherwise
     user = models.User(
         username=user.username,
