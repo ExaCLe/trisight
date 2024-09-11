@@ -128,3 +128,9 @@ def register_user(user: UserToRegister, db: Session = Depends(get_db)) -> UserRe
         username=user.username,
         email=user.email,
     )
+
+
+@router.get("/exists/{username}")
+def check_user_exists(username: str, db: Session = Depends(get_db)):
+    user = get_user(db, username)
+    return {"exists": user is not None}

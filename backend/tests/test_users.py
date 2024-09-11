@@ -138,3 +138,16 @@ def test_token_expiration(setup_database, monkeypatch):
     )
     assert response.status_code == 401
     assert response.json()["detail"] == "Could not validate credentials"
+
+
+def test_user_already_exists(setup_database):
+    # Register a user
+    create_test_user()
+
+    response = client.get("/api/users/exists/testuser")
+    assert response.status_code == 200
+    assert response.json()["exists"] is True
+
+    response = client.get("/api/users/exists/nonexistentuser")
+    assert response.status_code == 200
+    assert response.json()["exists"] is False
