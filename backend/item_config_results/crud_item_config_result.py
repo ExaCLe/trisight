@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session
 from backend import models, schemas
 
 
-def create_item_config_result(db: Session, item_config_result: schemas.ItemConfigResult):
+def create_item_config_result(
+    db: Session, item_config_result: schemas.ItemConfigResult, user: models.User
+):
     db_item_config_result = models.ItemConfigResult(
-        **item_config_result.model_dump()
+        **item_config_result.model_dump(), user_id=user.id
     )
     db.add(db_item_config_result)
     try:
@@ -20,9 +22,24 @@ def create_item_config_result(db: Session, item_config_result: schemas.ItemConfi
     return db_item_config_result
 
 
-def get_all_item_config_results_for_item_config(db: Session, item_config_id: int):
-    return db.query(models.ItemConfigResult).filter(models.ItemConfigResult.item_config_id == item_config_id).all()
+def get_all_item_config_results_for_item_config(
+    db: Session, item_config_id: int, user: models.User
+):
+    return (
+        db.query(models.ItemConfigResult)
+        .filter(
+            models.ItemConfigResult.item_config_id == item_config_id,
+            models.ItemConfigResult.user_id == user.id,
+        )
+        .all()
+    )
 
 
-def get_item_config_result_by_id(db: Session, item_config_result_id: int):
-    return db.query(models.ItemConfigResult).filter(models.ItemConfigResult.id == item_config_result_id).first()
+def get_item_config_result_by_id(
+    db: Session, item_config_result_id: int, user: models.User
+):
+    return (
+        db.query(models.ItemConfigResult)
+        .filter(models.ItemConfigResult.id == item_config_result_id)
+        .first()
+    )
