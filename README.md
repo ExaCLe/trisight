@@ -1,19 +1,35 @@
 # Installation
+
 ```bash
-pip install 'fastapi[all]' sqlalchemy
+pip install 'fastapi[all]' sqlalchemy alembic
+# Run the migrations for the database and seed it with sample data
+alembic -x seed_data=true upgrade head
 cd frontend && yarn install
 ```
 
-# Running backend and frontend 
-### Backend 
+# Running backend and frontend
+
+### Backend
+
 ```bash
 uvicorn backend.main:app --reload
 ```
 
-### Frontend 
+### Frontend
+
 ```bash
 yarn dev --open
 ```
 
-# Backend Documentation 
+# Backend Documentation
+
 - Start the backend server and go to 'http://localhost:8000/docs/' to find in depth documentation about possible errors, expected input and return objects
+
+## Updating the backend database
+
+```bash
+# create a new revision
+alembic revision --autogenerate -m "your message here"
+# apply the changes to the database
+alembic upgrade head
+```
