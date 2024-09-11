@@ -24,12 +24,22 @@ class ItemConfigResponse(BaseModel):
     circle_color: str
     time_visible_ms: int
     orientation: str
+    user_id: int
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class User(BaseModel):
-    name: str
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+
+class UserToRegister(BaseModel):
+    username: str
     email: str
     password: str
 
@@ -39,14 +49,13 @@ class User(BaseModel):
 class UserResponse(BaseModel):
     id: int
     created: datetime
-    name: str
+    username: str
     email: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ItemConfigResult(BaseModel):
-    user_id: Optional[int] = None
     item_config_id: int
     correct: bool
     reaction_time_ms: int
@@ -58,7 +67,7 @@ class ItemConfigResult(BaseModel):
 class ItemConfigResultResponse(BaseModel):
     id: int
     created: datetime
-    user_id: Optional[int] = None
+    user_id: int
     item_config_id: int
     correct: bool
     reaction_time_ms: int
@@ -68,7 +77,6 @@ class ItemConfigResultResponse(BaseModel):
 
 
 class TestConfig(BaseModel):
-    user_id: Optional[int] = None
     name: str
     item_config_ids: List[int]
 
@@ -78,7 +86,7 @@ class TestConfig(BaseModel):
 class TestConfigResponse(BaseModel):
     id: int
     created: datetime
-    user_id: Optional[int] = None
+    user_id: int
     name: str
     item_configs: List[ItemConfigResponse]
 
@@ -91,7 +99,6 @@ class TestConfigResult(BaseModel):
     correct_answers: int
     wrong_answers: int
     item_config_result_ids: List[int]
-    user_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -99,7 +106,7 @@ class TestConfigResult(BaseModel):
 class TestConfigResultResponse(BaseModel):
     id: int
     created: datetime
-    user_id: Optional[int] = None
+    user_id: int
     test_config_id: int
     time: datetime
     correct_answers: int

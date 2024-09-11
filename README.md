@@ -1,10 +1,11 @@
 # Installation
 
 ```bash
-pip install 'fastapi[all]' sqlalchemy alembic
+pip install requirements.txt
 # Run the migrations for the database and seed it with sample data
 alembic -x seed_data=true upgrade head
 cd frontend && yarn install
+openssl rand -hex 32 > backend/.env
 ```
 
 # Running backend and frontend
