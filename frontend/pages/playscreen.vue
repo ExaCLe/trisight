@@ -279,7 +279,7 @@ const loadNextItem = () => {
 const endGame = () => {
   isGameOver.value = true; // Setze den Spielzustand auf "vorbei"
   clearInterval(timer.value); // Stoppe den Timer
-  clearInterval(gameTimer.value); // Stoppe den Game Timer
+   clearInterval(gameTimer.value); // Stoppe den Game Timer
   removeKeyListener(); // Entferne die Event-Listener für die Pfeiltasten
 };
 
