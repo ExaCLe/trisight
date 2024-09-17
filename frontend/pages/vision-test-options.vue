@@ -19,7 +19,7 @@
         <div class="option-card">
           <h2>Konfigurator</h2>
           <p>Erstellen Sie Ihren eigenen Sehtest mit individuell anpassbaren Einstellungen.</p>
-          <NuxtLink to="/vision-test/configurator" class="button">Zum Konfigurator</NuxtLink>
+          <NuxtLink to="/configurator" class="button">Zum Konfigurator</NuxtLink>
         </div>
       </div>
   
