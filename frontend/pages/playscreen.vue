@@ -1,7 +1,13 @@
 <template>
   <div class="playscreen">
+    <!-- Fehlermeldung anzeigen, wenn ein Fehler beim Datenabruf auftritt -->
+    <div class="error-alert" v-if="fetchError">
+      Es gab ein Problem beim Abrufen der Spielkonfiguration. Bitte versuchen
+      Sie es erneut.
+    </div>
+
     <!-- Nur anzeigen, wenn isTrisightMode true ist -->
-    <div class="score-timer" v-if="isTrisightMode && !isGameOver">
+    <div class="score-timer" v-if="isTrisightMode && !isGameOver && !fetchError">
       <div class="left-side">
         <!-- Anzeige des Game Timers als numerische Zeitangabe -->
         <div class="game-timer">
@@ -36,9 +42,23 @@
       </div>
     </div>
 
-    <!-- Darstellung des aktuellen Spielzustands (Triangle und Circle) -->
+    <!-- Darstellung des Platzhalters oder des aktuellen Spielzustands -->
     <div class="triangle-container" v-if="!isGameOver">
+      <!-- Platzhalter anzeigen, wenn das Spiel noch nicht gestartet ist -->
       <div
+        v-if="isPlaceholderVisible"
+        class="circle-background placeholder"
+        :style="{
+          width: '200px', /* Platzhaltergröße */
+          height: '200px'
+        }"
+      >
+        <div class="triangle placeholder-triangle"></div>
+      </div>
+
+      <!-- Aktueller Spielzustand (Triangle und Circle) anzeigen, wenn das Spiel gestartet ist -->
+      <div
+        v-else
         class="circle-background"
         :style="{
           backgroundColor: currentItem.circle_color,
@@ -60,7 +80,7 @@
     </div>
 
     <!-- Anweisungen für Benutzer -->
-    <div class="instructions" v-show="!isGameStarted && !isGameOver">
+    <div class="instructions" v-show="!isGameStarted && !isGameOver && !fetchError">
       <span>Drücke eine Taste um zu starten!</span>
     </div>
 
@@ -83,7 +103,7 @@ import { useRoute } from "vue-router";
 // Router verwenden, um den Query-Parameter zu erhalten
 const route = useRoute();
 const isTrisightMode = ref(route.query.isTrisightMode === "true");
-const difficulty = ref(route.query.difficulty || 'easy'); // Default to 'easy'
+const difficulty = ref(route.query.difficulty || "easy"); // Default to 'easy'
 
 const score = ref(0);
 const currentIndex = ref(0);
@@ -95,7 +115,9 @@ const totalTime = ref(0); // Speichert die Gesamtzeit für den Timer
 const isGameOver = ref(false); // Neuer Zustand zur Überprüfung des Spielendes
 const isGameStarted = ref(false); // Neuer Zustand zur Überprüfung, ob das Spiel gestartet wurde
 const remainingGameTime = ref(60); // Verbleibende Zeit für das Spiel in Sekunden
-const randomizedItems = ref([]); // Zufällig geordnete Items
+const randomizedItems = ref([]);
+const fetchError = ref(false);
+const isPlaceholderVisible = ref(true); // Neuer Zustand für den Platzhalter
 
 // Begrenzte Größen für das Dreieck und den Kreis
 const limitedTriangleSize = computed(() =>
@@ -147,28 +169,29 @@ const fetchData = async () => {
     let endpoint;
     if (isTrisightMode.value) {
       switch (difficulty.value) {
-        case 'medium':
+        case "medium":
           endpoint = "http://localhost:8000/api/test_configs/3";
           break;
-        case 'hard':
+        case "hard":
           endpoint = "http://localhost:8000/api/test_configs/4";
           break;
         default:
-          endpoint = "http://localhost:8000/api/test_configs/1"; // Leicht (Standard)
+          endpoint = "http://localhost:8000/api/test_configs/1"; //auch leicht
       }
     } else {
-      endpoint = "http://localhost:8000/api/test_configs/2"; // Endpunkt für den Standardmodus
+      endpoint = "http://localhost:8000/api/test_configs/2";
     }
     const response = await $fetch(endpoint);
+    fetchError.value = false; // Kein Fehler
     return response;
   } catch (error) {
     console.error("Fehler beim Abrufen der Konfigurationen:", error);
+    fetchError.value = true; // Setze Fehlerzustand
     return null;
   }
 };
 
 const data = await fetchData();
-console.log(data);
 
 const initializeGame = () => {
   if (data && data.item_configs.length > 0) {
@@ -183,6 +206,7 @@ const initializeGame = () => {
 
 const startGame = () => {
   isGameStarted.value = true;
+  isPlaceholderVisible.value = false; // Platzhalter ausblenden, wenn das Spiel beginnt
   if (isTrisightMode.value) {
     startTimer();
     startGameTimer(); // Starte den universellen Game Timer
@@ -202,16 +226,17 @@ const startTimer = () => {
 };
 
 const handleKeyPress = (event) => {
+  if (
+    ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)
+  ) {
+    event.preventDefault();
+  }
   if (!isGameStarted.value) {
     startGame();
+    return;
   }
 
   if (isGameOver.value) return; // Wenn das Spiel vorbei ist, keine Eingaben verarbeiten
-
-  // Verhindere das Standardverhalten (z.B. Scrollen)
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
-    event.preventDefault();
-  }
 
   switch (event.key) {
     case "ArrowUp":
@@ -254,7 +279,6 @@ const endGame = () => {
   isGameOver.value = true; // Setze den Spielzustand auf "vorbei"
   clearInterval(timer.value); // Stoppe den Timer
   clearInterval(gameTimer.value); // Stoppe den Game Timer
-  console.log("Spiel beendet. Punktestand: " + score.value);
   removeKeyListener(); // Entferne die Event-Listener für die Pfeiltasten
 };
 
@@ -271,6 +295,7 @@ const startNewRound = () => {
   remainingGameTime.value = 60;
   isGameOver.value = false;
   isGameStarted.value = false;
+  isPlaceholderVisible.value = true; // Platzhalter wieder anzeigen
   initializeGame();
 
   if (typeof window !== "undefined") {
@@ -403,6 +428,19 @@ onUnmounted(() => {
   position: absolute;
 }
 
+/* Stile für den Platzhalter */
+.placeholder {
+  background-color: lightgrey;
+  border: 2px dashed #185262;
+}
+
+.placeholder-triangle {
+  width: 50px;
+  height: 50px;
+  background-color: grey;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
 .instructions {
   font-size: 26px;
   color: #353535;
@@ -461,5 +499,12 @@ onUnmounted(() => {
 .button:hover {
   background-color: #0f3e4b;
   color: #fff;
+}
+
+/* Stil für den Error Alert */
+.error-alert {
+  font-size: 24px;
+  font-weight: bold;
+  color: rgb(189, 52, 52);
 }
 </style>

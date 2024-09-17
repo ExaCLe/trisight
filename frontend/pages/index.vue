@@ -116,7 +116,7 @@ export default {
 /* Obere Sektion */
 .intro-section {
   background-color: #185262;
-  background-image: url(../images\trisight-background-home-desktop.png);
+  background-image: url(../images/trisight-background-home-desktop.png);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
