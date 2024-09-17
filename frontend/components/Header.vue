@@ -7,7 +7,7 @@
         class="logo"
       />
     </a>
-    <button class="login-button">Login</button>
+    <NuxtLink class="login-button" :to="{path: '/register'}">Login</NuxtLink>
   </header>
 </template>
 
@@ -40,6 +40,7 @@ header {
   font-size: 16px;
   font-weight: bold;
   transition: background-color 0.3s, color 0.3s;
+  text-align: center;
 }
 
 .login-button:hover {
