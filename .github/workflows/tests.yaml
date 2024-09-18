@@ -38,5 +38,5 @@ jobs:
       - name: Run tests with coverage
         run: |
           pip install pytest-cov
-          coverage run -m pytest --cov=backend tests/
+          coverage run -m pytest --cov=backend backend/tests/
           coverage report -m
