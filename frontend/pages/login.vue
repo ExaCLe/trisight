@@ -72,6 +72,7 @@ async function onSubmit(event) {
 
         // redirect to the dashboard
         await navigateTo('/')
+        location.reload()
     } catch (error) {
         if (error.status === 401 && error.data?.detail === 'Incorrect email or password') {
             incorrect_error.value = true
