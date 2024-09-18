@@ -40,9 +40,3 @@ jobs:
           pip install pytest-cov
           coverage run -m pytest --cov=backend tests/
           coverage report -m
-
-# Block merges if tests fail
-rules:
-  checks:
-    required: ["Run Pytest with Alembic Migrations and Code Coverage"]
-    enforcement_level: non-admins
