@@ -7,7 +7,7 @@
         class="logo"
       />
     </a>
-    <button v-if="loggedIn" class="login-button" @click="logout">Logout</button>
+    <button v-if="loggedIn" class="logout-button" @click="logout">Logout</button>
     <NuxtLink v-else class="login-button" :to="{path: '/login'}">Login</NuxtLink>
   </header>
 </template>
@@ -69,4 +69,13 @@ header {
   background-color: #0f3e4b;
   color: white;
 }
+
+.logout-button {
+  color: white;
+  /* under line the text */
+  text-decoration: underline;
+  margin-right: 20px;
+  padding: 10px 20px;
+}
+
 </style>
