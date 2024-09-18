@@ -48,7 +48,6 @@ class UserToRegister(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
-    created: datetime
     username: str
     email: str
 

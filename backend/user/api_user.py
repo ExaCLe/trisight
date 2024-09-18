@@ -49,11 +49,21 @@ def authenticate_user(db: Session, email: str, password: str):
     return user
 
 
-def create_access_token(data: dict):
+def create_access_token(db: Session, data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    issued_at = datetime.now(timezone.utc)
+    to_encode.update({"exp": expire, "iat": issued_at.timestamp()})
     encoded_jwt = jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=ALGORITHM)
+
+    try:
+        user = get_user_by_username(db, data["sub"])
+        user.issued_at = issued_at
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=f"Constraint error: {e.orig}")
+
     return encoded_jwt
 
 
@@ -68,6 +78,8 @@ async def get_current_user(
     try:
         payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        issued_at: datetime = payload.get("iat")
+        issued_at = datetime.fromtimestamp(issued_at, tz=timezone.utc)
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
@@ -75,6 +87,13 @@ async def get_current_user(
         raise credentials_exception
     user = get_user_by_username(db, username=token_data.username)
     if user is None:
+        raise credentials_exception
+
+    if (
+        issued_at is not None
+        and user.issued_at is not None
+        and issued_at.replace(tzinfo=None) < user.issued_at
+    ):
         raise credentials_exception
     return user
 
@@ -91,7 +110,7 @@ def login_for_access_token(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(db, data={"sub": user.username})
     return Token(access_token=access_token, token_type="bearer")
 
 
@@ -145,3 +164,17 @@ def register_user(user: UserToRegister, db: Session = Depends(get_db)) -> UserRe
 def check_user_exists(username: str, db: Session = Depends(get_db)):
     user = get_user_by_username(db, username)
     return {"exists": user is not None}
+
+
+@router.post("/logout")
+async def logout(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    current_user = await get_current_user(token, db)
+
+    try:
+        current_user.issued_at = datetime.now(timezone.utc)
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=f"Constraint error: {e.orig}")
+
+    return {"detail": "Successfully logged out"}
