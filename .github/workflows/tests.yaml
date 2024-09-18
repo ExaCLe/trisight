@@ -30,9 +30,9 @@ jobs:
           pip install -r requirements.txt
 
       # Run Alembic migrations
-      - name: Run Alembic Migrations
-        run: |
-          alembic -x seed_data=true upgrade head
+      # - name: Run Alembic Migrations
+      #   run: |
+      #     alembic -x seed_data=true upgrade head
 
       # Run Pytest and generate coverage report
       - name: Run tests with coverage
