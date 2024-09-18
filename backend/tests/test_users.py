@@ -81,7 +81,7 @@ def test_login_user(setup_database):
     create_test_user()
 
     # Test successful login
-    login_data = {"username": "testuser", "password": "testpassword"}
+    login_data = {"username": "testuser@example.com", "password": "testpassword"}
     response = client.post("/api/users/login", data=login_data)
     assert response.status_code == 200
     data = response.json()
@@ -89,16 +89,19 @@ def test_login_user(setup_database):
     assert data["token_type"] == "bearer"
 
     # Test login with incorrect credentials
-    invalid_login_data = {"username": "testuser", "password": "wrongpassword"}
+    invalid_login_data = {
+        "username": "testuser@example.com",
+        "password": "wrongpassword",
+    }
     response = client.post("/api/users/login", data=invalid_login_data)
     assert response.status_code == 401
-    assert response.json()["detail"] == "Incorrect username or password"
+    assert response.json()["detail"] == "Incorrect email or password"
 
 
 def test_get_current_user(setup_database):
     # Register and log in a user
     create_test_user()
-    login_data = {"username": "testuser", "password": "testpassword"}
+    login_data = {"username": "testuser@example.com", "password": "testpassword"}
     login_response = client.post("/api/users/login", data=login_data)
     token = login_response.json()["access_token"]
 
@@ -134,7 +137,7 @@ def test_token_expiration(setup_database, monkeypatch):
         ),
     )
 
-    login_data = {"username": "testuser", "password": "testpassword"}
+    login_data = {"username": "testuser@example.com", "password": "testpassword"}
     login_response = client.post("/api/users/login", data=login_data)
     expired_token = login_response.json()["access_token"]
 

@@ -32,12 +32,16 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def get_user(db: Session, username: str) -> models.User:
+def get_user(db: Session, email: str) -> models.User:
+    return db.query(models.User).filter(models.User.email == email).first()
+
+
+def get_user_by_username(db: Session, username: str) -> models.User:
     return db.query(models.User).filter(models.User.username == username).first()
 
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = get_user(db, username)
+def authenticate_user(db: Session, email: str, password: str):
+    user = get_user(db, email)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -69,7 +73,7 @@ async def get_current_user(
         token_data = TokenData(username=username)
     except InvalidTokenError:
         raise credentials_exception
-    user = get_user(db, username=token_data.username)
+    user = get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -84,7 +88,7 @@ def login_for_access_token(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(data={"sub": user.username})
@@ -101,7 +105,7 @@ def read_users_me(
 @router.post("/register", response_model=UserResponse)
 def register_user(user: UserToRegister, db: Session = Depends(get_db)) -> UserResponse:
     # check that the user does not already exist
-    if get_user(db, user.username):
+    if get_user_by_username(db, user.username):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User already exists",
@@ -139,5 +143,5 @@ def register_user(user: UserToRegister, db: Session = Depends(get_db)) -> UserRe
 
 @router.get("/exists/{username}")
 def check_user_exists(username: str, db: Session = Depends(get_db)):
-    user = get_user(db, username)
+    user = get_user_by_username(db, username)
     return {"exists": user is not None}
