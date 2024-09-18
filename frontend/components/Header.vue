@@ -7,7 +7,7 @@
         class="logo"
       />
     </a>
-    <NuxtLink class="login-button" :to="{path: '/register'}">Login</NuxtLink>
+    <NuxtLink class="login-button" :to="{path: '/login'}">Login</NuxtLink>
   </header>
 </template>
 

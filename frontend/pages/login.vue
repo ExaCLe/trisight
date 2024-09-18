@@ -1,31 +1,27 @@
 <template>
     <UContainer>
+        <UAlert
+            icon="i-heroicons-command-line"
+            color="red"
+            variant="soft"
+            title="Email oder Passwort falsch"
+            :description="`Die eingegebene Email oder das Passwort ist falsch. Bitte überprüfen Sie Ihre Eingabe.`"
+            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'gray', variant: 'link', padded: false }"
+            v-if="incorrect_error"
+            @close="incorrect_error = null"
+        />
         <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
             <!-- Email -->
             <UFormGroup label="Email" name="email" >
                 <UInput v-model="state.email" />
             </UFormGroup>
 
-            <!-- Username -->
-            <UFormGroup label="Username" name="username" >
-                <UInput v-model="state.username" />
-            </UFormGroup>
-
             <!-- Password -->
             <UFormGroup label="Password" name="password" >
                 <UInput v-model="state.password" type="password" />
             </UFormGroup>
-            <UAlert
-                icon="i-heroicons-command-line"
-                color="red"
-                variant="soft"
-                title="Email bereits registriert"
-                :description="`Die Email ${email_error.value} ist bereits registriert.`"
-                :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'gray', variant: 'link', padded: false }"
-                v-if="email_error"
-                @close="email_error = null"
-            />
-            <UButton type="submit">Register</UButton>
+            <UButton type="submit">Login</UButton>
+            <UButton type="button" @click="navigateTo('/register')">Register</UButton>
         </UForm>
         <UAlert
             icon="i-heroicons-command-line"
@@ -46,46 +42,21 @@ import {object, string } from 'yup'
 
 const schema = object({
     email: string().email('Ungültige Email').required('Pflicht'),
-    username: string()
-        .required('Pflicht')
-        .min(3, 'Mindestens 3 Zeichen')
-        .test('unique-username', 'Benutzername wird bereits verwendet', async function (value) {
-            if (value === '') {
-                return true;
-            }
-            try {
-                const response = await fetch(`http://localhost:8000/api/users/exists/${value}`);
-                const data = await response.json();
-                return data.exists === false;
-            } catch (error) {
-                return true; // assume it does not exist
-            }
-        }),
-    password: string().required("Pflicht").min(8, "Mindestens 8 Zeichen"),
+    password: string().required("Pflicht"),
 })
 
 const state = reactive({
     email: '',
-    username: '',
     password: '',
 })
 
-const email_error = ref(null)
-
+const incorrect_error = ref(false)
 const other_error = ref(null)
 
 async function onSubmit(event) {
     event.preventDefault()
 
     try {
-        const response = await $fetch('http://localhost:8000/api/users/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(state)
-        })
-
         // login the user 
         const loginFormData = new FormData();
         loginFormData.append('username', state.email);
@@ -102,8 +73,8 @@ async function onSubmit(event) {
         // redirect to the dashboard
         await navigateTo('/')
     } catch (error) {
-        if (error.status === 400 && error.data?.detail === 'Email already registered') {
-            email_error.value = state.email
+        if (error.status === 401 && error.data?.detail === 'Incorrect email or password') {
+            incorrect_error.value = true
         } else {
             other_error.value = error
         }
