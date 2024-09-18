@@ -1,14 +1,15 @@
 <template>
-    <UContainer>
+    <UContainer class="container">
         <UAlert
             icon="i-heroicons-command-line"
             color="red"
-            variant="soft"
+            variant="subtle"
             title="Email oder Passwort falsch"
             :description="`Die eingegebene Email oder das Passwort ist falsch. Bitte überprüfen Sie Ihre Eingabe.`"
-            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'gray', variant: 'link', padded: false }"
+            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'white', variant: 'link', padded: false }"
             v-if="incorrect_error"
             @close="incorrect_error = null"
+            class="mb-4"
         />
         <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
             <!-- Email -->
@@ -20,20 +21,20 @@
             <UFormGroup label="Password" name="password" >
                 <UInput v-model="state.password" type="password" />
             </UFormGroup>
+            <UAlert
+                icon="i-heroicons-command-line"
+                color="red"
+                variant="subtle"
+                title="Server Error"
+                :description="`Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.`"
+                :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'white', variant: 'link', padded: false }"
+                v-if="other_error"
+                @close="other_error = null"
+                class="mt-4"
+            />
             <UButton type="submit">Login</UButton>
-            <UButton type="button" @click="navigateTo('/register')">Register</UButton>
+            <UButton type="button" @click="navigateTo('/register')" class="ml-4" variant="outline">Register</UButton>
         </UForm>
-        <UAlert
-            icon="i-heroicons-command-line"
-            color="red"
-            variant="solid"
-            title="Server Error"
-            :description="`Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.`"
-            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'gray', variant: 'link', padded: false }"
-            v-if="other_error"
-            @close="other_error = null"
-        />
-        
     </UContainer>
 </template>
 
@@ -83,3 +84,10 @@ async function onSubmit(event) {
 }
 
 </script>
+
+<style scoped>
+.container {
+    height: 60vh;
+    padding: 50px
+}
+</style>˚
