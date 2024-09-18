@@ -23,6 +23,10 @@ jobs:
         with:
           python-version: "3.10.14"
 
+      # Set SECRET_KEY from GitHub secrets
+      - name: Set environment variables
+        run: echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
+
       # Install dependencies
       - name: Install dependencies
         run: |
