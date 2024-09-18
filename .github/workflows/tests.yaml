@@ -1,0 +1,48 @@
+name: Run Pytest with Alembic Migrations and Code Coverage
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Python environment
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Run Alembic migrations
+      - name: Run Alembic Migrations
+        run: |
+          alembic -x seed_data=true upgrade head
+
+      # Run Pytest and generate coverage report
+      - name: Run tests with coverage
+        run: |
+          pip install pytest-cov
+          coverage run -m pytest --cov=backend tests/
+          coverage report -m
+
+  # Block merges if tests fail
+  rules:
+    checks:
+      required: ["Run Pytest with Alembic Migrations and Code Coverage"]
+      enforcement_level: non-admins
