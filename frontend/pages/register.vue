@@ -1,5 +1,5 @@
 <template>
-    <UContainer>
+    <UContainer class="container">
         <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
             <!-- Email -->
             <UFormGroup label="Email" name="email" >
@@ -18,25 +18,25 @@
             <UAlert
                 icon="i-heroicons-command-line"
                 color="red"
-                variant="soft"
+                variant="subtle"
                 title="Email bereits registriert"
-                :description="`Die Email ${email_error.value} ist bereits registriert.`"
-                :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'gray', variant: 'link', padded: false }"
+                :description="`Die Email ist bereits registriert.`"
+                :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'white', variant: 'link', padded: false }"
                 v-if="email_error"
                 @close="email_error = null"
             />
+            <UAlert
+                icon="i-heroicons-command-line"
+                color="red"
+                variant="subtle"
+                title="Server Error"
+                :description="`Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.`"
+                :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'white', variant: 'link', padded: false }"
+                v-if="other_error"
+                @close="other_error = null"
+            />
             <UButton type="submit">Register</UButton>
         </UForm>
-        <UAlert
-            icon="i-heroicons-command-line"
-            color="red"
-            variant="solid"
-            title="Server Error"
-            :description="`Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.`"
-            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'gray', variant: 'link', padded: false }"
-            v-if="other_error"
-            @close="other_error = null"
-        />
         
     </UContainer>
 </template>
@@ -77,6 +77,9 @@ const other_error = ref(null)
 async function onSubmit(event) {
     event.preventDefault()
 
+    other_error.value = null
+    email_error.value = null
+
     try {
         const response = await $fetch('http://localhost:8000/api/users/register', {
             method: 'POST',
@@ -111,3 +114,10 @@ async function onSubmit(event) {
 }
 
 </script>
+
+<style scoped>
+.container {
+    height: 60vh;
+    padding: 50px
+}
+</style>˚
