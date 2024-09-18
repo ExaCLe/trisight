@@ -100,7 +100,7 @@ async function onSubmit(event) {
         })
 
         // save the token in the local storage
-        localStorage.setItem('token', login_response.token)
+        localStorage.setItem('token', login_response.access_token)
 
         // redirect to the dashboard
         await navigateTo('/')

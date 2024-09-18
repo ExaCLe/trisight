@@ -15,6 +15,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
+const toast = useToast()
+
 // Create a reactive loggedIn ref
 const loggedIn = ref(false)
 
@@ -25,10 +27,33 @@ onMounted(() => {
   }
 })
 
-function logout() {
+async function logout() {
   if (!import.meta.env.SSR) {
-    localStorage.removeItem('token')
-    location.reload()
+    try {
+      console.log(localStorage.getItem('token'))
+      // Remove the token on the server 
+      await $fetch('http://localhost:8000/api/users/me', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      // Remove the token on the server 
+      await $fetch('http://localhost:8000/api/users/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      localStorage.removeItem('token')
+      location.reload()
+    } catch (error) {
+      toast.add({
+        title: 'Logout fehlgeschlagen. Bitte versuchen Sie es erneut.',
+        id: 'logout-failed',
+        color: "red",
+      })
+    }
   }
 }
 </script>
