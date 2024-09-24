@@ -166,6 +166,7 @@ const startGameTimer = () => {
 const fetchData = async () => {
   try {
     let endpoint;
+    console.log(process, process.env)
     if (isTrisightMode.value) {
       switch (difficulty.value) {
         case "medium":
