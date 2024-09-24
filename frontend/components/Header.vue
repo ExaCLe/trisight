@@ -75,7 +75,7 @@ header {
 }
 
 .login-button {
-  background-color: white;
+  background-color: #fff8ec;
   width: 140px;
   color: #185262;
   border: none;
@@ -91,7 +91,7 @@ header {
 
 .login-button:hover {
   background-color: #0f3e4b;
-  color: white;
+  color: #fff8ec;
 }
 
 .logout-button {

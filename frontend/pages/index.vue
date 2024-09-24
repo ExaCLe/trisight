@@ -13,8 +13,27 @@
         <div class="info-container">
           <h1>Wie schnell ist dein Auge...?</h1>
           <div class="button-group">
-            <button class="test-button">Vision Test</button>
-            <button class="test-button">Trisight Mode</button>
+            <NuxtLink
+              :to="{ path: '/playscreen', query: { isTrisightMode: true } }"
+              class="button-quick"
+            >
+              Quick Start
+            </NuxtLink>
+            <NuxtLink
+              :to="{
+                path: '/vision-test-options',
+                query: { isTrisightMode: false },
+              }"
+              class="test-button"
+            >
+              Vision Test
+            </NuxtLink>
+            <NuxtLink
+              :to="{ path: '/trisight-mode-options', query: { isTrisightMode: true } }"
+              class="test-button"
+            >
+              Trisight Mode
+            </NuxtLink>
           </div>
         </div>
       </div>
@@ -69,7 +88,11 @@
       </div>
       <div class="image-container">
         <div class="circle-background">
-          <img class="triangle-image-2" src="../images/blue-neon-triangle.png" alt="Blue Neon Triangle" />
+          <img
+            class="triangle-image-2"
+            src="../images/blue-neon-triangle.png"
+            alt="Blue Neon Triangle"
+          />
         </div>
       </div>
     </div>
@@ -93,11 +116,11 @@ export default {
 /* Obere Sektion */
 .intro-section {
   background-color: #185262;
-  background-image: url(../images\trisight-background-home-desktop.png);
-  background-repeat: no-repeat; 
-  background-size: cover; 
+  background-image: url(../images/trisight-background-home-desktop.png);
+  background-repeat: no-repeat;
+  background-size: cover;
   background-position: center;
-  color: white;
+  color: #fff8ec;
   min-height: 90vh;
   display: flex;
   justify-content: center;
@@ -128,7 +151,6 @@ export default {
   height: 400px;
   animation: rotateAndPulse 9s infinite linear;
 }
-
 
 .triangle-image-2 {
   animation: pulseSize 9s infinite linear;
@@ -161,17 +183,18 @@ export default {
 }
 
 @keyframes pulseSize {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(0.3);
   }
   50% {
-    transform: scale(1.0);
+    transform: scale(1);
   }
 }
 
 .circle-background {
-  width: 440px;
-  height: 440px;
+  width: 340px;
+  height: 340px;
   border-radius: 50%;
   background: orange; /* Ausgangsfarbe */
   display: flex;
@@ -206,7 +229,7 @@ h1 {
 }
 
 .test-button {
-  background-color: white;
+  background-color: #fff8ec;
   color: #185262;
   border: none;
   padding: 10px 20px;
@@ -220,18 +243,32 @@ h1 {
 
 .test-button:hover {
   background-color: #0f3e4b;
-  color: white;
+  color: #fff8ec;
+}
+
+.button-quick {
+  background-color: #ffffff00;
+  color: #fff8ec;
+  border: solid 1px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s, color 0.3s;
+  width: 150px; /* Einheitliche Breite für beide Buttons */
+  text-align: center;
 }
 
 .info-section {
-  background-color: #ffffff;
+  background-color: #fff8ec;
   color: rgb(56, 56, 56);
-  height: 60vh;
+  height: auto; /* Automatische Höhe, damit es sich an den Inhalt anpasst */
   padding: 40px;
   text-align: left;
   display: flex;
-  justify-content: center; /* Zentriert den Inhalt horizontal */
-  align-items: center; /* Zentriert den Inhalt vertikal */
+  flex-wrap: wrap; /* Flexibles Layout für kleinere Bildschirme */
+  justify-content: center;
+  align-items: center;
   gap: 40px;
 }
 
@@ -253,6 +290,7 @@ h1 {
   max-width: 100%;
   height: 370px;
   margin-top: 20px;
+  object-fit: cover;
 }
 
 .info-section h2 {
@@ -274,5 +312,75 @@ h1 {
 
 .info-section ul li {
   margin-bottom: 5px;
+}
+
+/* Responsive Styles */
+@media (max-width: 1200px) {
+  .content-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    margin-top: 0;
+  }
+
+  .text-container {
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .info-container {
+    align-items: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .triangle-image {
+    height: 300px;
+  }
+
+  .info-section {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .text-container {
+    margin-left: 0;
+    text-align: center;
+    max-width: 90%;
+  }
+
+  .info-section h2 {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .triangle-image {
+    height: 200px;
+  }
+
+  .circle-background {
+    width: 300px;
+    height: 300px;
+  }
+
+  .info-section {
+    padding: 10px;
+  }
+
+  .text-container {
+    max-width: 100%;
+  }
+
+  .test-button {
+    width: 120px;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
 }
 </style>
