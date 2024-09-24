@@ -5,5 +5,5 @@ pyjwt
 python-multipart
 python-dotenv
 alembic
-psycopg2-binary
+psycopg2
 pydantic-settings
