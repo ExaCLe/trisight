@@ -34,3 +34,11 @@ alembic revision --autogenerate -m "your message here"
 # apply the changes to the database
 alembic upgrade head
 ```
+
+## Backend Database Deployment
+
+Make sure to set the database URL correctly:
+
+```bash
+export DATABASE_URL=postgresql://username:password@hostname:port/dbname
+```
