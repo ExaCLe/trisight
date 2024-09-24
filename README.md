@@ -6,7 +6,7 @@ pip install requirements.txt
 alembic -x seed_data=true upgrade head
 cd frontend && yarn install
 cd ..
-openssl rand -hex 32 > backend/.env
+echo "SECRET_KEY=$(openssl rand -hex 32)" > backend/.env
 ```
 
 # Running backend and frontend
