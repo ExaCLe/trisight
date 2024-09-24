@@ -4,12 +4,12 @@ from backend.database import SessionLocal
 
 users_to_insert = [
     models.User(
-        name="john_doe",
+        username="john_doe",
         email="john.doe@company.com",
         password="testpassword",  # TODO: Hash this password when merged with the login feature branch
     ),
     models.User(
-        name="jane_doe",
+        username="jane_doe",
         email="jane.doe@company.com",
         password="testpassword",  # TODO: Hash this password when merged with the login feature branch
     ),
