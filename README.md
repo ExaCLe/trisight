@@ -5,6 +5,7 @@ pip install requirements.txt
 # Run the migrations for the database and seed it with sample data
 alembic -x seed_data=true upgrade head
 cd frontend && yarn install
+cd ..
 openssl rand -hex 32 > backend/.env
 ```
 
