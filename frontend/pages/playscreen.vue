@@ -46,7 +46,7 @@
     <div class="triangle-container" v-if="!isGameOver">
       <!-- Platzhalter anzeigen, wenn das Spiel noch nicht gestartet ist -->
       <div
-        v-if="isPlaceholderVisible"
+        v-if="!isGameStarted"
         class="circle-background placeholder"
         :style="{
           width: '200px', /* Platzhaltergröße */
@@ -117,7 +117,6 @@ const isGameStarted = ref(false); // Neuer Zustand zur Überprüfung, ob das Spi
 const remainingGameTime = ref(60); // Verbleibende Zeit für das Spiel in Sekunden
 const randomizedItems = ref([]);
 const fetchError = ref(false);
-const isPlaceholderVisible = ref(true); // Neuer Zustand für den Platzhalter
 
 // Begrenzte Größen für das Dreieck und den Kreis
 const limitedTriangleSize = computed(() =>
