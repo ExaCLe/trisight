@@ -5,7 +5,9 @@ pip install requirements.txt
 # Run the migrations for the database and seed it with sample data
 alembic -x seed_data=true upgrade head
 cd frontend && yarn install
-openssl rand -hex 32 > backend/.env
+cd ..
+echo "BACKEND_URL=http://localhost:8000" > frontend/.env
+echo "SECRET_KEY=$(openssl rand -hex 32)" > backend/.env
 ```
 
 # Running backend and frontend
