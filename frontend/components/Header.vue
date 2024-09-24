@@ -30,7 +30,6 @@ onMounted(() => {
 async function logout() {
   if (!import.meta.env.SSR) {
     try {
-      console.log(localStorage.getItem('token'))
       // Remove the token on the server 
       await $fetch('http://localhost:8000/api/users/me', {
         method: 'GET',
