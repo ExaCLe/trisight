@@ -113,18 +113,22 @@ test_configs_to_insert = [
 # Define your seed data
 def seed_data():
     db: Session = SessionLocal()
+    try:
 
-    # insert the users
-    for user in users_to_insert:
-        db.add(user)
+        # insert the users
+        for user in users_to_insert:
+            db.add(user)
 
-    # insert the item configs
-    for item_config in item_configs_to_insert:
-        db.add(item_config)
+        # insert the item configs
+        for item_config in item_configs_to_insert:
+            db.add(item_config)
 
-    # insert the test configs
-    for test_config in test_configs_to_insert:
-        db.add(test_config)
+        # insert the test configs
+        for test_config in test_configs_to_insert:
+            db.add(test_config)
 
-    db.commit()
-    db.close()
+        db.commit()
+    except Exception as e:
+        pass
+    finally:
+        db.close()
