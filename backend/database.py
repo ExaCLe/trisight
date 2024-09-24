@@ -7,7 +7,7 @@ from backend.config import settings
 DATABASE_URL = settings.DATABASE_URL
 
 # Determine if the database is SQLite
-IS_SQLITE = str(DATABASE_URL).startswith("sqlite")
+IS_SQLITE = DATABASE_URL.startswith("sqlite")
 
 # Set connect_args conditionally
 if IS_SQLITE:
