@@ -7,15 +7,13 @@
         class="logo"
       />
     </a>
-    <button v-if="loggedIn" class="logout-button" @click="logout">Logout</button>
-    <NuxtLink v-else class="login-button" :to="{path: '/login'}">Login</NuxtLink>
+    <NuxtLink v-if="loggedIn" class="login-button" :to="{path: './profile'}">Profile</NuxtLink>
+    <NuxtLink v-else class="login-button" :to="{path: '/login' }">Login</NuxtLink>
   </header>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-
-const toast = useToast()
 
 // Create a reactive loggedIn ref
 const loggedIn = ref(false)
@@ -26,35 +24,6 @@ onMounted(() => {
     loggedIn.value = localStorage.getItem('token') !== null
   }
 })
-
-async function logout() {
-  if (!import.meta.env.SSR) {
-    try {
-      // Remove the token on the server 
-      await $fetch('http://localhost:8000/api/users/me', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      // Remove the token on the server 
-      await $fetch('http://localhost:8000/api/users/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      localStorage.removeItem('token')
-      location.reload()
-    } catch (error) {
-      toast.add({
-        title: 'Logout fehlgeschlagen. Bitte versuchen Sie es erneut.',
-        id: 'logout-failed',
-        color: "red",
-      })
-    }
-  }
-}
 </script>
 
 <style scoped>

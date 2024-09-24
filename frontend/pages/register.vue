@@ -35,7 +35,8 @@
                 v-if="other_error"
                 @close="other_error = null"
             />
-            <UButton type="submit">Register</UButton>
+            <UButton type="submit" class="bg-blue-dianne-900">Register</UButton>
+            <UButton type="button" @click="navigateTo('/login')" class="ml-4 border-blue-dianne-900 text-color-blue-dianne-900" variant="outline">Login</UButton>
         </UForm>
         
     </UContainer>

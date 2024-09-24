@@ -32,8 +32,8 @@
                 @close="other_error = null"
                 class="mt-4"
             />
-            <UButton type="submit">Login</UButton>
-            <UButton type="button" @click="navigateTo('/register')" class="ml-4" variant="outline">Register</UButton>
+            <UButton type="submit" class="bg-blue-dianne-900">Login</UButton>
+            <UButton type="button" @click="navigateTo('/register')" class="ml-4 border-blue-dianne-900 text-color-blue-dianne-900" variant="outline">Register</UButton>
         </UForm>
     </UContainer>
 </template>
