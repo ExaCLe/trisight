@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.models import Base
 from backend.main import app
+from backend.tests.utils import get_user_id_and_token
 from backend.utils import get_db
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./temp_for_tests.db"
@@ -37,23 +39,6 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
-
-
-def get_user_id_and_token(username="testuser"):
-    register_response = client.post(
-        "/api/users/register",
-        json={
-            "username": username,
-            "email": "test@test.de",
-            "password": "testpassword",
-        },
-    )
-    login_response = client.post(
-        "/api/users/login", data={"username": username, "password": "testpassword"}
-    )
-    token = login_response.json()["access_token"]
-
-    return token, register_response.json()["id"]
 
 
 def insert_test_config_to_db(token):
@@ -123,7 +108,7 @@ def insert_test_config_result_to_db(token):
 
 
 def test_create_test_config_result(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_result_to_db(token)
     assert response.status_code == 200
     data = response.json()
@@ -136,7 +121,7 @@ def test_create_test_config_result(setup_database):
 
 
 def test_create_test_config_result_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_to_db(token)
     test_config_id = response.json()["id"]
     test_config_result_data = {
@@ -155,7 +140,7 @@ def test_create_test_config_result_unauthorized(setup_database):
 
 
 def test_create_test_config_result_invalid_data(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_to_db(token)
     test_config_id = response.json()["id"]
     test_config_result_data = {
@@ -174,7 +159,7 @@ def test_create_test_config_result_invalid_data(setup_database):
 
 
 def test_insert_test_config_result_with_invalid_test_config_id(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     test_config_result_data = {
         "test_config_id": 928289238,
         "correct_answers": 2,
@@ -192,7 +177,7 @@ def test_insert_test_config_result_with_invalid_test_config_id(setup_database):
 
 
 def test_read_all_test_config_results_for_test_config(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_result_to_db(token)
     test_config_id = response.json()["test_config_id"]
 
@@ -211,12 +196,12 @@ def test_read_all_test_config_results_for_test_config(setup_database):
 
 
 def test_read_all_test_config_results_for_test_config_only_own_results(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_result_to_db(token)
     test_config_id = response.json()["test_config_id"]
 
     # Insert a test config result for a different user
-    token2, user_id2 = get_user_id_and_token("testuser2")
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
     test_config_results_data = {
         "test_config_id": test_config_id,
         "correct_answers": 2,
@@ -245,7 +230,7 @@ def test_read_all_test_config_results_for_test_config_only_own_results(setup_dat
 
 
 def test_read_all_test_config_results_for_test_config_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_result_to_db(token)
     test_config_id = response.json()["test_config_id"]
 
@@ -257,7 +242,7 @@ def test_read_all_test_config_results_for_test_config_unauthorized(setup_databas
 
 
 def test_read_test_config_result_by_id(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_result_to_db(token)
     test_config_result_id = response.json()["id"]
     response = client.get(
@@ -276,8 +261,8 @@ def test_read_test_config_result_by_id(setup_database):
 
 
 def test_read_test_config_result_by_id_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token("testuser2")
+    token, user_id = get_user_id_and_token(client)
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
     response = insert_test_config_result_to_db(token)
     test_config_result_id = response.json()["id"]
     response = client.get(
@@ -288,7 +273,7 @@ def test_read_test_config_result_by_id_unauthorized(setup_database):
 
 
 def test_read_test_config_result_by_invalid_id(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = client.get(
         "/api/test_config_results/928289238",
         headers={"Authorization": f"Bearer {token}"},
@@ -297,7 +282,7 @@ def test_read_test_config_result_by_invalid_id(setup_database):
 
 
 def test_update_test_config_result(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_result_to_db(token)
     test_config_result_id = response.json()["id"]
 
@@ -325,8 +310,8 @@ def test_update_test_config_result(setup_database):
 
 
 def test_update_test_config_result_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token("testuser2")
+    token, user_id = get_user_id_and_token(client)
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
     response = insert_test_config_result_to_db(token)
     test_config_result_id = response.json()["id"]
 
@@ -349,7 +334,7 @@ def test_update_test_config_result_unauthorized(setup_database):
 
 
 def test_update_test_config_result_invalid_id(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     update_data = {
         "test_config_id": 1,  # Assuming this ID exists
         "correct_answers": 1,
@@ -367,7 +352,7 @@ def test_update_test_config_result_invalid_id(setup_database):
 
 
 def test_delete_test_config_result(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = insert_test_config_result_to_db(token)
     test_config_result_id = response.json()["id"]
 
@@ -386,8 +371,8 @@ def test_delete_test_config_result(setup_database):
 
 
 def test_delete_test_config_result_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token("testuser2")
+    token, user_id = get_user_id_and_token(client)
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
     response = insert_test_config_result_to_db(token)
     test_config_result_id = response.json()["id"]
 
@@ -399,7 +384,7 @@ def test_delete_test_config_result_unauthorized(setup_database):
 
 
 def test_delete_test_config_result_invalid_id(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     response = client.delete(
         "/api/test_config_results/928289238",
         headers={"Authorization": f"Bearer {token}"},

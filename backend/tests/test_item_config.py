@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -7,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.models import Base
 from backend.main import app
+from backend.tests.utils import get_user_id_and_token
 from backend.utils import get_db
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./temp_for_tests.db"
@@ -42,25 +41,8 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
-def get_user_id_and_token(username="testuser"):
-    register_response = client.post(
-        "/api/users/register",
-        json={
-            "username": username,
-            "email": "test@test.de",
-            "password": "testpassword",
-        },
-    )
-    login_response = client.post(
-        "/api/users/login", data={"username": username, "password": "testpassword"}
-    )
-    token = login_response.json()["access_token"]
-
-    return token, register_response.json()["id"]
-
-
 def test_create_item_config_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     item_config_data = {
         "triangle_size": 100,
         "triangle_color": "#FF0000",
@@ -103,7 +85,7 @@ def test_create_item_config_endpoint_unauthorized(setup_database):
 
 
 def test_create_item_config_endpoint_invalid_data(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     item_config_data = {
         "triangle_size": 100,
         "triangle_color": "#FF0000",
@@ -121,7 +103,7 @@ def test_create_item_config_endpoint_invalid_data(setup_database):
 
 
 def test_create_item_config_endpoint_invalid_orientation(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     item_config_data = {
         "triangle_size": 100,
         "triangle_color": "#FF0000",
@@ -139,7 +121,7 @@ def test_create_item_config_endpoint_invalid_orientation(setup_database):
 
 
 def test_create_item_config_endpoint_invalid_length(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     item_config_data = {
         "triangle_size": -1,
         "triangle_color": "#FF0000",
@@ -173,7 +155,7 @@ def test_create_item_config_endpoint_invalid_length(setup_database):
 
 
 def test_read_item_configs_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -208,7 +190,7 @@ def test_read_item_configs_endpoint(setup_database):
 
 
 def test_read_item_config_by_id_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -246,7 +228,7 @@ def test_read_item_config_by_id_endpoint_invalid_id(setup_database):
 
 
 def test_update_item_config_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -290,8 +272,8 @@ def test_update_item_config_endpoint(setup_database):
 
 
 def test_update_item_config_endpoint_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token("testuser2")
+    token, user_id = get_user_id_and_token(client)
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -327,7 +309,7 @@ def test_update_item_config_endpoint_unauthorized(setup_database):
 
 
 def test_delete_item_config_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,
@@ -366,8 +348,8 @@ def test_delete_item_config_endpoint(setup_database):
 
 
 def test_delete_item_config_endpoint_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token("testuser2")
+    token, user_id = get_user_id_and_token(client)
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
     # First, create an item config
     item_config_data = {
         "triangle_size": 100,

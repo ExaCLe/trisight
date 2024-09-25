@@ -92,6 +92,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(String)
     hashed_password: Mapped[str] = mapped_column(String)
 
+    issued_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, nullable=True
+    )  # for the logout feature
+
     # Relationship with ItemConfigResult
     item_config_results: Mapped[List["ItemConfigResult"]] = relationship(
         back_populates="user"
