@@ -24,7 +24,7 @@ class ItemConfigResponse(BaseModel):
     circle_color: str
     time_visible_ms: int
     orientation: str
-    user_id: int
+    user_id: Optional[int]
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -85,7 +85,7 @@ class TestConfig(BaseModel):
 class TestConfigResponse(BaseModel):
     id: int
     created: datetime
-    user_id: int
+    user_id: Optional[int]
     name: str
     item_configs: List[ItemConfigResponse]
 
