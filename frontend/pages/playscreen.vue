@@ -213,7 +213,6 @@ const initializeGame = () => {
 
 const startGame = () => {
   isGameStarted.value = true;
-  isPlaceholderVisible.value = false; // Platzhalter ausblenden, wenn das Spiel beginnt
   if (isTrisightMode.value) {
     startTimer();
     startGameTimer(); // Starte den universellen Game Timer
