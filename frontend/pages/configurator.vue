@@ -10,6 +10,7 @@
 
     <!-- Grid der verfügbaren Testkombinationen -->
     <div class="tile-grid">
+      <!-- Geladene Items anzeigen -->
       <div
         v-for="(item, index) in testItems"
         :key="item.id"
@@ -25,7 +26,11 @@
           <!-- Visualisierung der Dreieck- und Kreiskombination -->
           <div
             class="circle-background"
-            :style="{ backgroundColor: item.circle_color, width: getCircleSize(item.circle_size) + 'px', height: getCircleSize(item.circle_size) + 'px' }"
+            :style="{
+              backgroundColor: item.circle_color,
+              width: getCircleSize(item.circle_size) + 'px',
+              height: getCircleSize(item.circle_size) + 'px',
+            }"
           >
             <div
               class="triangle"
@@ -33,28 +38,75 @@
                 width: getTriangleSize(item.triangle_size) + 'px',
                 height: getTriangleSize(item.triangle_size) + 'px',
                 backgroundColor: item.triangle_color,
-                transform: getRotationStyle(item.orientation).rotation
+                transform: getRotationStyle(item.orientation).rotation,
               }"
             ></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Platzhalter-Kachel mit einem Pluszeichen hinzufügen -->
+      <div class="test-tile add-item-tile" @click="isOpen = true">
+        <div class="tile-content">
+          <span class="plus-sign">+</span>
         </div>
       </div>
     </div>
 
     <!-- Buttons zum Speichern oder Abrufen des Sehtests -->
     <div class="button-group">
-      <UButton @click="saveTest" color="amber" variant="solid">Sehtest speichern</UButton>
+      <UButton @click="saveTest" color="amber" variant="solid"
+        >Sehtest speichern</UButton
+      >
       <UInput v-model="testId" placeholder="Sehtest ID eingeben" />
-      <UButton @click="loadTest" color="sky" variant="solid">Sehtest laden</UButton>
+      <UButton @click="loadTest" color="sky" variant="solid"
+        >Sehtest laden</UButton
+      >
     </div>
   </div>
+
+  <UModal v-model="isOpen">
+    <div class="modal-content">
+        <h2>Neue Item-Konfiguration erstellen</h2>
+        <div class="modal-body">
+          <!-- Vorschau des Dreiecks auf dem Kreis -->
+          <div class="preview-container">
+            <div class="circle" :style="{ backgroundColor: circleColor, width: circleSize + 'px', height: circleSize + 'px' }" @click="selectColor('circle')">
+              <div class="triangle" :style="{ width: triangleSize + 'px', height: triangleSize + 'px', backgroundColor: triangleColor }" @click="selectColor('triangle')"></div>
+            </div>
+          </div>
+
+          <!-- Größensteuerung -->
+          <div class="size-controls">
+            <button @click="adjustTriangleSize(5)">+</button>
+            <button @click="adjustTriangleSize(-5)">-</button>
+          </div>
+
+          <!-- Farbauswahl -->
+          <div class="color-controls">
+            <div>
+              Kreisfarbe: <div class="color-box" :style="{ backgroundColor: circleColor }" @click="selectColor('circle')"></div>
+            </div>
+            <div>
+              Dreieckfarbe: <div class="color-box" :style="{ backgroundColor: triangleColor }" @click="selectColor('triangle')"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Speichern und Schließen Buttons -->
+        <div class="modal-footer">
+          <UButton @click="saveItemConfig" color="green" variant="solid">Speichern</UButton>
+          <UButton @click="isOpen = false" color="red" variant="solid">Abbrechen</UButton>
+        </div>
+      </div>
+  </UModal>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
 
 // API-Endpunkte
-const testItemsEndpoint = "http://localhost:8000/api/test_configs/1"; // Korrigiert, um den richtigen Endpunkt zu verwenden
+const testItemsEndpoint = "http://localhost:8000/api/test_configs/1";
 const saveTestEndpoint = "http://localhost:8000/api/save_test";
 const loadTestEndpoint = "http://localhost:8000/api/load_test";
 
@@ -63,6 +115,12 @@ const selectedItems = ref([]);
 const selectedOrder = ref([]); // Speichert die Reihenfolge der ausgewählten Kacheln
 const fetchError = ref(false);
 const testId = ref("");
+const isOpen = ref(false);
+
+const circleColor = ref("#ffcc00");
+const triangleColor = ref("#3333ff");
+const circleSize = ref(150);
+const triangleSize = ref(50);
 
 // Daten abrufen
 const fetchTestItems = async () => {
@@ -107,7 +165,9 @@ const saveTest = async () => {
     alert(`Sehtest erfolgreich gespeichert! ID: ${response.testId}`);
   } catch (error) {
     console.error("Fehler beim Speichern des Sehtests:", error);
-    alert("Es gab ein Problem beim Speichern des Sehtests. Bitte versuchen Sie es erneut.");
+    alert(
+      "Es gab ein Problem beim Speichern des Sehtests. Bitte versuchen Sie es erneut."
+    );
   }
 };
 
@@ -123,7 +183,9 @@ const loadTest = async () => {
     alert("Sehtest erfolgreich geladen!");
   } catch (error) {
     console.error("Fehler beim Laden des Sehtests:", error);
-    alert("Es gab ein Problem beim Laden des Sehtests. Bitte versuchen Sie es erneut.");
+    alert(
+      "Es gab ein Problem beim Laden des Sehtests. Bitte versuchen Sie es erneut."
+    );
   }
 };
 
@@ -167,6 +229,37 @@ const getTriangleSize = (size) => {
   const scale = 0.5; // Skalierungsfaktor für die Anpassung an die Kachelgröße
   return Math.min(size * scale, maxSize);
 };
+
+// Speichert die neu erstellte Item-Konfiguration und fügt sie zur Liste hinzu
+const saveItemConfig = () => {
+  const newItem = {
+    id: Date.now(),
+    circle_color: circleColor.value,
+    triangle_color: triangleColor.value,
+    circle_size: circleSize.value,
+    triangle_size: triangleSize.value,
+    orientation: "N",
+  };
+  testItems.value.push(newItem);
+  isOpen.value = false; // Modal schließen
+};
+
+// Größe des Dreiecks ändern
+const adjustTriangleSize = (change) => {
+  const newSize = triangleSize.value + change;
+  if (newSize > 10 && newSize < circleSize.value) {
+    triangleSize.value = newSize;
+  }
+};
+
+// Farbe ändern
+const selectColor = (target) => {
+  const newColor = prompt(`Wählen Sie eine Farbe für das ${target}`, target === "circle" ? circleColor.value : triangleColor.value);
+  if (newColor) {
+    if (target === "circle") circleColor.value = newColor;
+    else triangleColor.value = newColor;
+  }
+};
 </script>
 
 <style scoped>
@@ -194,11 +287,22 @@ const getTriangleSize = (size) => {
   height: 150px; /* Feste Kachelhöhe */
   cursor: pointer;
   transition: all 0.2s;
+  border-radius: 15px; /* Abgerundete Ecken für die Kacheln */
 }
 
 .test-tile.selected {
-  border-color: #185262;
+  border: #000000 dashed 1px;
   background-color: #e0f7fa;
+}
+
+.add-item-tile {
+  border: 2px dashed #ccc;
+  border-radius: 15px; /* Abgerundete Ecken für die Platzhalterkachel */
+}
+
+.plus-sign {
+  font-size: 48px;
+  color: #185262;
 }
 
 .tile-content {
@@ -206,7 +310,6 @@ const getTriangleSize = (size) => {
   justify-content: center;
   align-items: center;
   height: 100%;
-  position: relative; /* Um die absolute Positionierung des Dreiecks zu ermöglichen */
 }
 
 .button-group {
@@ -221,11 +324,48 @@ const getTriangleSize = (size) => {
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative; /* Relative Positionierung für Kind-Elemente */
 }
 
 .triangle {
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  position: absolute;
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+}
+
+.preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.size-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.color-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.color-box {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #000;
+  cursor: pointer;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
 }
 </style>
