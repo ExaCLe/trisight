@@ -67,52 +67,89 @@
 
   <UModal v-model="isOpen">
     <div class="modal-content">
-        <h2>Neue Item-Konfiguration erstellen</h2>
-        <div class="modal-body">
-          <!-- Vorschau des Dreiecks auf dem Kreis -->
-          <div class="preview-container">
-            <div class="circle" :style="{ backgroundColor: circleColor, width: circleSize + 'px', height: circleSize + 'px' }" @click="selectColor('circle')">
-              <div class="triangle" :style="{ width: triangleSize + 'px', height: triangleSize + 'px', backgroundColor: triangleColor }" @click="selectColor('triangle')"></div>
+      <h2 class="modal-title">Neue Item-Konfiguration erstellen</h2>
+      <div class="modal-body">
+        <!-- Vorschau des Dreiecks auf dem Kreis -->
+        <div class="preview-container">
+          <div
+            class="circle"
+            :style="{
+              backgroundColor: circleColor,
+              width: circleSize + 'px',
+              height: circleSize + 'px',
+            }"
+            @click="selectColor('circle')"
+          >
+            <div class="triangle-circle">
+              <div
+                class="triangle"
+                :style="{
+                  width: triangleSize + 'px',
+                  height: triangleSize + 'px',
+                  backgroundColor: triangleColor,
+                  transform: getRotationStyle(modalOrientation).rotation,
+                }"
+                @click="selectColor('triangle')"
+              ></div>
             </div>
           </div>
+        </div>
 
-          <!-- Größensteuerung -->
+        <!-- Steuerungsbereich -->
+        <div class="controls">
           <div class="size-controls">
-            <button @click="adjustTriangleSize(5)">+</button>
-            <button @click="adjustTriangleSize(-5)">-</button>
+            <span>Größe:</span>
+            <button class="size-btn" @click="adjustTriangleSize(5)">+</button>
+            <button class="size-btn" @click="adjustTriangleSize(-5)">-</button>
           </div>
 
-          <!-- Farbauswahl -->
           <div class="color-controls">
             <div>
-              Kreisfarbe: <div class="color-box" :style="{ backgroundColor: circleColor }" @click="selectColor('circle')"></div>
+              Kreisfarbe:
+              <input class="color-input" type="color" v-model="circleColor" />
             </div>
             <div>
-              Dreieckfarbe: <div class="color-box" :style="{ backgroundColor: triangleColor }" @click="selectColor('triangle')"></div>
+              Dreieckfarbe:
+              <input class="color-input" type="color" v-model="triangleColor" />
             </div>
           </div>
-        </div>
 
-        <!-- Speichern und Schließen Buttons -->
-        <div class="modal-footer">
-          <UButton @click="saveItemConfig" color="green" variant="solid">Speichern</UButton>
-          <UButton @click="isOpen = false" color="red" variant="solid">Abbrechen</UButton>
+          <div class="direction-controls">
+    
+            <button class="direction-btn" @click="setModalOrientation('N')">
+              Norden
+            </button>
+            <button class="direction-btn" @click="setModalOrientation('E')">
+              Osten
+            </button>
+            <button class="direction-btn" @click="setModalOrientation('S')">
+              Süden
+            </button>
+            <button class="direction-btn" @click="setModalOrientation('W')">
+              Westen
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- Speichern und Schließen Buttons -->
+      <div class="modal-footer">
+        <button class="btn" @click="saveItemConfig">Speichern</button>
+        <button class="btn" @click="isOpen = false">Abbrechen</button>
+      </div>
+    </div>
   </UModal>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
 
-// API-Endpunkte
 const testItemsEndpoint = "http://localhost:8000/api/test_configs/1";
 const saveTestEndpoint = "http://localhost:8000/api/save_test";
 const loadTestEndpoint = "http://localhost:8000/api/load_test";
 
 const testItems = ref([]);
 const selectedItems = ref([]);
-const selectedOrder = ref([]); // Speichert die Reihenfolge der ausgewählten Kacheln
 const fetchError = ref(false);
 const testId = ref("");
 const isOpen = ref(false);
@@ -121,16 +158,12 @@ const circleColor = ref("#ffcc00");
 const triangleColor = ref("#3333ff");
 const circleSize = ref(150);
 const triangleSize = ref(50);
+const modalOrientation = ref("N");
 
-// Daten abrufen
 const fetchTestItems = async () => {
   try {
     const response = await $fetch(testItemsEndpoint);
-    if (response && response.item_configs) {
-      testItems.value = response.item_configs; // Direkt auf die item_configs zugreifen
-    } else {
-      testItems.value = [];
-    }
+    testItems.value = response?.item_configs || [];
     fetchError.value = false;
   } catch (error) {
     console.error("Fehler beim Abrufen der Testkonfigurationen:", error);
@@ -138,24 +171,20 @@ const fetchTestItems = async () => {
   }
 };
 
-// Auswahl einer Kachel umschalten
+const openModal = () => {
+  isOpen.value = true;
+};
+
 const toggleSelection = (id) => {
-  const index = selectedItems.value.indexOf(id);
-  if (index > -1) {
-    selectedItems.value.splice(index, 1); // Deselektieren
-    selectedOrder.value.splice(selectedOrder.value.indexOf(id), 1); // Reihenfolge aktualisieren
+  if (selectedItems.value.includes(id)) {
+    selectedItems.value = selectedItems.value.filter((itemId) => itemId !== id);
   } else {
-    selectedItems.value.push(id); // Selektieren
-    selectedOrder.value.push(id); // Zur Reihenfolge hinzufügen
+    selectedItems.value.push(id);
   }
 };
 
-// Gibt die Reihenfolge der Auswahl für ein Element zurück
-const getSelectionOrder = (id) => {
-  return selectedOrder.value.indexOf(id) + 1; // 1-basierte Reihenfolge
-};
+const getSelectionOrder = (id) => selectedItems.value.indexOf(id) + 1;
 
-// Sehtest speichern
 const saveTest = async () => {
   try {
     const response = await $fetch(saveTestEndpoint, {
@@ -171,7 +200,6 @@ const saveTest = async () => {
   }
 };
 
-// Sehtest laden
 const loadTest = async () => {
   try {
     const response = await $fetch(loadTestEndpoint, {
@@ -189,48 +217,24 @@ const loadTest = async () => {
   }
 };
 
-// Daten abrufen, wenn die Komponente gemountet wird
-onMounted(() => {
-  fetchTestItems();
-});
+const setModalOrientation = (newOrientation) => {
+  modalOrientation.value = newOrientation;
+};
 
-// Funktion zur Dreiecksrotation
 const getRotationStyle = (orientation) => {
-  let rotation = "";
-  switch (orientation) {
-    case "N":
-      rotation = "rotate(0deg)";
-      break;
-    case "E":
-      rotation = "rotate(90deg)";
-      break;
-    case "S":
-      rotation = "rotate(180deg)";
-      break;
-    case "W":
-      rotation = "rotate(270deg)";
-      break;
-    default:
-      rotation = "rotate(0deg)";
-  }
-  return { rotation };
+  const rotations = {
+    N: "rotate(0deg)",
+    E: "rotate(90deg)",
+    S: "rotate(180deg)",
+    W: "rotate(-90deg)",
+  };
+  return { rotation: rotations[orientation] || "rotate(0deg)" };
 };
 
-// Funktion zur Berechnung der Größe der Kreise
-const getCircleSize = (size) => {
-  const maxSize = 80; // Maximalgröße für den Kreis in Pixeln
-  const scale = 0.8; // Skalierungsfaktor für die Anpassung an die Kachelgröße
-  return Math.min(size * scale, maxSize);
-};
+const getCircleSize = (size) => Math.min(size * 0.8, 80);
 
-// Funktion zur Berechnung der Größe des Dreiecks
-const getTriangleSize = (size) => {
-  const maxSize = 40; // Maximalgröße für das Dreieck in Pixeln
-  const scale = 0.5; // Skalierungsfaktor für die Anpassung an die Kachelgröße
-  return Math.min(size * scale, maxSize);
-};
+const getTriangleSize = (size) => Math.min(size * 0.5, 40);
 
-// Speichert die neu erstellte Item-Konfiguration und fügt sie zur Liste hinzu
 const saveItemConfig = () => {
   const newItem = {
     id: Date.now(),
@@ -238,34 +242,24 @@ const saveItemConfig = () => {
     triangle_color: triangleColor.value,
     circle_size: circleSize.value,
     triangle_size: triangleSize.value,
-    orientation: "N",
+    orientation: modalOrientation.value,
   };
   testItems.value.push(newItem);
-  isOpen.value = false; // Modal schließen
+  isOpen.value = false;
 };
 
-// Größe des Dreiecks ändern
 const adjustTriangleSize = (change) => {
   const newSize = triangleSize.value + change;
-  if (newSize > 10 && newSize < circleSize.value) {
-    triangleSize.value = newSize;
-  }
+  if (newSize > 10 && newSize < circleSize.value) triangleSize.value = newSize;
 };
 
-// Farbe ändern
-const selectColor = (target) => {
-  const newColor = prompt(`Wählen Sie eine Farbe für das ${target}`, target === "circle" ? circleColor.value : triangleColor.value);
-  if (newColor) {
-    if (target === "circle") circleColor.value = newColor;
-    else triangleColor.value = newColor;
-  }
-};
+onMounted(fetchTestItems);
 </script>
 
 <style scoped>
 .configurator {
-  padding: 20px;
   text-align: center;
+  padding: 20px;
 }
 
 .error-alert {
@@ -282,22 +276,22 @@ const selectColor = (target) => {
 
 .test-tile {
   border: 2px solid #ccc;
+  width: 150px;
+  height: 150px;
   padding: 10px;
-  width: 150px; /* Feste Kachelbreite */
-  height: 150px; /* Feste Kachelhöhe */
   cursor: pointer;
   transition: all 0.2s;
-  border-radius: 15px; /* Abgerundete Ecken für die Kacheln */
+  border-radius: 15px;
 }
 
 .test-tile.selected {
-  border: #000000 dashed 1px;
+  border: 1px dashed #000;
   background-color: #e0f7fa;
 }
 
 .add-item-tile {
   border: 2px dashed #ccc;
-  border-radius: 15px; /* Abgerundete Ecken für die Platzhalterkachel */
+  border-radius: 15px;
 }
 
 .plus-sign {
@@ -305,7 +299,9 @@ const selectColor = (target) => {
   color: #185262;
 }
 
-.tile-content {
+.tile-content,
+.circle-background,
+.triangle-circle {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -319,15 +315,16 @@ const selectColor = (target) => {
   gap: 20px;
 }
 
+.circle,
 .circle-background {
   border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  cursor: pointer;
+  position: relative;
 }
 
 .triangle {
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease;
 }
 
 .modal-content {
@@ -335,37 +332,66 @@ const selectColor = (target) => {
   flex-direction: column;
   gap: 20px;
   text-align: center;
+  padding: 40px;
 }
 
-.preview-container {
+.modal-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: #185262;
+}
+
+.modal-body,
+.controls {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
-}
-
-.size-controls {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
-.color-controls {
-  display: flex;
-  justify-content: center;
   gap: 20px;
-}
-
-.color-box {
-  width: 30px;
-  height: 30px;
-  border: 1px solid #000;
-  cursor: pointer;
 }
 
 .modal-footer {
   display: flex;
+  flex-direction: row;
+  align-items: center;
   justify-content: center;
   gap: 20px;
 }
+
+.size-controls,
+.color-controls,
+.direction-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn,
+.size-btn,
+.direction-btn {
+  background-color: #185262;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover,
+.size-btn:hover,
+.direction-btn:hover {
+  background-color: #133b4b;
+}
+
+.color-input {
+  border: 1px dotted black;
+  border-radius: 50%;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  appearance: none;
+}
+
 </style>
