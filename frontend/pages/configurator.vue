@@ -18,10 +18,6 @@
         :class="{ selected: selectedItems.includes(item.id) }"
         @click="toggleSelection(item.id)"
       >
-        <!-- Nummerierung basierend auf der Auswahlreihenfolge anzeigen -->
-        <h3 v-if="selectedItems.includes(item.id)">
-          {{ getSelectionOrder(item.id) }}
-        </h3>
         <div class="tile-content">
           <!-- Visualisierung der Dreieck- und Kreiskombination -->
           <div
@@ -42,6 +38,23 @@
               }"
             ></div>
           </div>
+          <div class="button-container">
+            <button class="action-btn edit-btn" @click.stop="editItem(index)">
+              <UIcon name="heroicons:pencil-square-16-solid"></UIcon>
+            </button>
+            <button
+              class="action-btn duplicate-btn"
+              @click.stop="duplicateItem(index)"
+            >
+              <UIcon name="heroicons:document-duplicate"></UIcon>
+            </button>
+            <button
+              class="action-btn delete-btn"
+              @click.stop="deleteItem(index)"
+            >
+              <UIcon name="heroicons:trash-16-solid"></UIcon>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -55,9 +68,9 @@
 
     <!-- Buttons zum Speichern oder Abrufen des Sehtests -->
     <div class="button-group">
-      <UButton @click="saveTest" color="amber" variant="solid"
-        >Sehtest speichern</UButton
-      >
+      <UButton @click="saveTest" color="amber" variant="solid">
+        Sehtest speichern ({{ selectedItems.length }})
+      </UButton>
       <UInput v-model="testId" placeholder="Sehtest ID eingeben" />
       <UButton @click="loadTest" color="sky" variant="solid"
         >Sehtest laden</UButton
@@ -99,6 +112,13 @@
         <div class="controls">
           <div class="size-controls">
             <span>Größe:</span>
+            <input
+              class="size-input"
+              type="number"
+              v-model="triangleSize"
+              min="10"
+              max="120"
+            />
             <button class="size-btn" @click="adjustTriangleSize(5)">+</button>
             <button class="size-btn" @click="adjustTriangleSize(-5)">-</button>
           </div>
@@ -115,7 +135,6 @@
           </div>
 
           <div class="direction-controls">
-    
             <button class="direction-btn" @click="setModalOrientation('N')">
               Norden
             </button>
@@ -143,6 +162,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { watch } from "vue";
 
 const testItemsEndpoint = "http://localhost:8000/api/test_configs/1";
 const saveTestEndpoint = "http://localhost:8000/api/save_test";
@@ -170,6 +190,11 @@ const fetchTestItems = async () => {
     fetchError.value = true;
   }
 };
+
+watch(triangleSize, (newValue) => {
+  if (newValue > 120) triangleSize.value = 120;
+  if (newValue < 10) triangleSize.value = 10;
+});
 
 const openModal = () => {
   isOpen.value = true;
@@ -215,6 +240,29 @@ const loadTest = async () => {
       "Es gab ein Problem beim Laden des Sehtests. Bitte versuchen Sie es erneut."
     );
   }
+};
+
+const editItem = (index) => {
+  const item = testItems.value[index];
+  // Setze die Eigenschaften des zu bearbeitenden Items in die Modal-Werte
+  circleColor.value = item.circle_color;
+  triangleColor.value = item.triangle_color;
+  circleSize.value = item.circle_size;
+  triangleSize.value = item.triangle_size;
+  modalOrientation.value = item.orientation;
+
+  isOpen.value = true;
+  editingIndex.value = index;
+};
+
+const duplicateItem = (index) => {
+  const item = testItems.value[index];
+  const newItem = { ...item, id: Date.now() };
+  testItems.value.push(newItem);
+};
+
+const deleteItem = (index) => {
+  testItems.value.splice(index, 1);
 };
 
 const setModalOrientation = (newOrientation) => {
@@ -303,6 +351,7 @@ onMounted(fetchTestItems);
 .circle-background,
 .triangle-circle {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100%;
@@ -394,4 +443,43 @@ onMounted(fetchTestItems);
   appearance: none;
 }
 
+.size-input {
+  width: 50px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  margin-right: 10px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.3s;
+}
+
+.action-btn:hover {
+  transform: scale(1.2);
+}
+
+.edit-btn {
+  color: #4caf50;
+}
+
+.duplicate-btn {
+  color: #007bff; /* Blau für Duplizieren */
+}
+
+.delete-btn {
+  color: #f44336; /* Rot für Löschen */
+}
 </style>
