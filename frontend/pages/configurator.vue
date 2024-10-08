@@ -84,26 +84,28 @@
       <div class="modal-body">
         <!-- Vorschau des Dreiecks auf dem Kreis -->
         <div class="preview-container">
-          <div
-            class="circle"
-            :style="{
-              backgroundColor: circleColor,
-              width: circleSize + 'px',
-              height: circleSize + 'px',
-            }"
-            @click="selectColor('circle')"
-          >
-            <div class="triangle-circle">
-              <div
-                class="triangle"
-                :style="{
-                  width: triangleSize + 'px',
-                  height: triangleSize + 'px',
-                  backgroundColor: triangleColor,
-                  transform: getRotationStyle(modalOrientation).rotation,
-                }"
-                @click="selectColor('triangle')"
-              ></div>
+          <div class="preview-box">
+            <div
+              class="circle"
+              :style="{
+                backgroundColor: circleColor,
+                width: circleSize + 'px',
+                height: circleSize + 'px',
+              }"
+              @click="selectColor('circle')"
+            >
+              <div class="triangle-circle">
+                <div
+                  class="triangle"
+                  :style="{
+                    width: triangleSize + 'px',
+                    height: triangleSize + 'px',
+                    backgroundColor: triangleColor,
+                    transform: getRotationStyle(modalOrientation).rotation,
+                  }"
+                  @click="selectColor('triangle')"
+                ></div>
+              </div>
             </div>
           </div>
         </div>
@@ -111,7 +113,7 @@
         <!-- Steuerungsbereich -->
         <div class="controls">
           <div class="size-controls">
-            <span>Größe:</span>
+            <span>Dreieck:</span>
             <input
               class="size-input"
               type="number"
@@ -119,8 +121,31 @@
               min="10"
               max="120"
             />
-            <button class="size-btn" @click="adjustTriangleSize(5)">+</button>
-            <button class="size-btn" @click="adjustTriangleSize(-5)">-</button>
+            <div>
+              <button class="size-btn" @click="adjustTriangleSize(5)">
+                <UIcon name="heroicons:plus-20-solid" />
+              </button>
+              <button class="size-btn" @click="adjustTriangleSize(-5)">
+                <UIcon name="heroicons:minus-20-solid" />
+              </button>
+            </div>
+
+            <span>Kreis:</span>
+            <input
+              class="size-input"
+              type="number"
+              v-model="circleSize"
+              min="50"
+              max="200"
+            />
+            <div>
+              <button class="size-btn" @click="adjustCircleSize(5)">
+                <UIcon name="heroicons:plus-20-solid" />
+              </button>
+              <button class="size-btn" @click="adjustCircleSize(-5)">
+                <UIcon name="heroicons:minus-20-solid" />
+              </button>
+            </div>
           </div>
 
           <div class="color-controls">
@@ -195,6 +220,16 @@ watch(triangleSize, (newValue) => {
   if (newValue > 120) triangleSize.value = 120;
   if (newValue < 10) triangleSize.value = 10;
 });
+
+watch(circleSize, (newValue) => {
+  if (newValue > 200) circleSize.value = 200;
+  if (newValue < 50) circleSize.value = 50;
+});
+
+const adjustCircleSize = (change) => {
+  const newSize = circleSize.value + change;
+  if (newSize >= 50 && newSize <= 200) circleSize.value = newSize;
+};
 
 const openModal = () => {
   isOpen.value = true;
@@ -406,7 +441,6 @@ onMounted(fetchTestItems);
   gap: 20px;
 }
 
-.size-controls,
 .color-controls,
 .direction-controls {
   display: flex;
@@ -415,8 +449,13 @@ onMounted(fetchTestItems);
   gap: 10px;
 }
 
+.size-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .btn,
-.size-btn,
 .direction-btn {
   background-color: #185262;
   color: #fff;
@@ -427,20 +466,25 @@ onMounted(fetchTestItems);
   transition: background-color 0.3s ease;
 }
 
+.size-btn {
+  font-size: large;
+  border-radius: 30px;
+  display: flex;
+}
+
+.size-btn:hover {
+  background-color: #d6d6d6;
+}
+
 .btn:hover,
-.size-btn:hover,
 .direction-btn:hover {
   background-color: #133b4b;
 }
 
 .color-input {
-  border: 1px dotted black;
-  border-radius: 50%;
+  border: none;
   cursor: pointer;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  appearance: none;
+  width: 40px;
 }
 
 .size-input {
@@ -449,7 +493,7 @@ onMounted(fetchTestItems);
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 5px;
-  margin-right: 10px;
+  margin: 0 5px; /* Weniger Abstand links und rechts */
 }
 
 .button-container {
@@ -482,4 +526,26 @@ onMounted(fetchTestItems);
 .delete-btn {
   color: #f44336; /* Rot für Löschen */
 }
+
+.preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 300px; /* Breite der gesamten Vorschau */
+  height: 300px; /* Höhe der gesamten Vorschau */
+  border: 1px solid #ccc; /* Optional: Rand um die Vorschau */
+  border-radius: 10px; /* Optional: abgerundete Ecken */
+  overflow: hidden; /* Verhindert, dass Elemente aus der Box herausragen */
+}
+
+.preview-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  position: relative; /* Positionierung innerhalb des Containers */
+}
+
 </style>
