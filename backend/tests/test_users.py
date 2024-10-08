@@ -227,10 +227,14 @@ def test_reset_password_valid_token(setup_database):
     # Create a test user
     create_test_user()
 
-    # Request a password reset
-    email = "testuser@example.com"
-    forgot_response = client.post("/api/users/forgot-password", json={"email": email})
-    assert forgot_response.status_code == 200
+    # Mock the email sending function
+    with patch("backend.user.api_user.send_password_reset_email") as mock_send_email:
+        # Request a password reset
+        email = "testuser@example.com"
+        forgot_response = client.post(
+            "/api/users/forgot-password", json={"email": email}
+        )
+        assert forgot_response.status_code == 200
 
     # Retrieve the reset token from the database
     db = next(override_get_db())
@@ -274,29 +278,27 @@ def test_reset_password_expired_token(setup_database, monkeypatch):
     # Create a test user
     create_test_user()
 
-    # Request a password reset
-    email = "testuser@example.com"
-    forgot_response = client.post("/api/users/forgot-password", json={"email": email})
-    assert forgot_response.status_code == 200
+    # Mock the email sending function
+    with patch("backend.user.api_user.send_password_reset_email") as mock_send_email:
+        # Request a password reset
+        email = "testuser@example.com"
+        forgot_response = client.post(
+            "/api/users/forgot-password", json={"email": email}
+        )
+        assert forgot_response.status_code == 200
 
     # Retrieve the reset token from the database
     db = next(override_get_db())
     user = get_user(db, email)
-    reset_token = (
-        db.query(models.PasswordResetToken).filter_by(user_id=user.id).first().token
-    )
-
-    # Monkeypatch the token expiration time to simulate an expired token
-    monkeypatch.setattr(
-        "backend.models.PasswordResetToken.expires_at",
-        datetime.utcnow() - timedelta(hours=1),  # Set the expiration in the past
-    )
+    reset_token = db.query(models.PasswordResetToken).filter_by(user_id=user.id).first()
+    reset_token.expires_at = datetime.utcnow() - timedelta(hours=1)
+    db.commit()
 
     # Try to use the expired token to reset the password
     new_password = "newtestpassword"
     response = client.post(
         "/api/users/reset-password",
-        json={"token": reset_token, "new_password": new_password},
+        json={"token": reset_token.token, "new_password": new_password},
     )
     assert response.status_code == 400
     assert response.json() == {"detail": "Invalid or expired token"}
