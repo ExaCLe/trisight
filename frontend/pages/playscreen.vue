@@ -206,12 +206,14 @@ const initializeGame = () => {
 };
 
 const startGame = () => {
+  if (isGameStarted.value) return; // Falls das Spiel bereits läuft, nichts tun
   isGameStarted.value = true;
   if (isTrisightMode.value) {
-    startTimer();
-    startGameTimer(); // Starte den universellen Game Timer
+    startTimer(); // Timer für die Items starten
+    startGameTimer(); // Globalen Spiel-Timer starten
   }
 };
+
 
 const startTimer = () => {
   clearInterval(timer.value);
@@ -289,16 +291,20 @@ const removeKeyListener = () => {
 };
 
 const startNewRound = () => {
+  // Alle relevanten Werte zurücksetzen
   score.value = 0;
   currentIndex.value = 0;
   remainingTime.value = 0;
-  remainingGameTime.value = 60;
+  remainingGameTime.value = 60; // Spielzeit auf 60 Sekunden zurücksetzen
   isGameOver.value = false;
   isGameStarted.value = false;
-  isPlaceholderVisible.value = true; // Platzhalter wieder anzeigen
+
+  // Daten erneut initialisieren und laden
   initializeGame();
 
+  // Event-Listener für Tastatureingaben erneut hinzufügen, falls entfernt
   if (typeof window !== "undefined") {
+    removeKeyListener(); // Sicherstellen, dass keine doppelten Listener vorhanden sind
     window.addEventListener("keydown", handleKeyPress); // Event-Listener wieder hinzufügen
   }
 };

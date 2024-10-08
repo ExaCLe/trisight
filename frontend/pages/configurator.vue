@@ -68,19 +68,30 @@
 
     <!-- Buttons zum Speichern oder Abrufen des Sehtests -->
     <div class="button-group">
-      <UButton @click="saveTest" color="amber" variant="solid">
+      <UButton
+        class="btn"
+        style="padding: 8px 20px; font-size: 16px"
+        @click="saveTest"
+        variant="solid"
+      >
         Sehtest speichern ({{ selectedItems.length }})
       </UButton>
-      <UInput v-model="testId" placeholder="Sehtest ID eingeben" />
-      <UButton @click="loadTest" color="sky" variant="solid"
-        >Sehtest laden</UButton
+
+      <UButton
+        class="btn"
+        style="padding: 8px 20px; font-size: 16px"
+        @click="isLoadModalOpen = true"
+        variant="solid"
       >
+        Sehtest laden
+        <UIcon name="heroicons:cloud-arrow-down-16-solid" class="w-5 h-5" />
+      </UButton>
     </div>
   </div>
 
   <UModal v-model="isOpen">
     <div class="modal-content">
-      <h2 class="modal-title">Neue Item-Konfiguration erstellen</h2>
+      <h2 class="modal-title">Sehtest Objekt konfigurieren</h2>
       <div class="modal-body">
         <!-- Vorschau des Dreiecks auf dem Kreis -->
         <div class="preview-container">
@@ -161,16 +172,16 @@
 
           <div class="direction-controls">
             <button class="direction-btn" @click="setModalOrientation('N')">
-              Norden
+              Oben
             </button>
             <button class="direction-btn" @click="setModalOrientation('E')">
-              Osten
+              Rechts
             </button>
             <button class="direction-btn" @click="setModalOrientation('S')">
-              Süden
+              Unten
             </button>
             <button class="direction-btn" @click="setModalOrientation('W')">
-              Westen
+              Links
             </button>
           </div>
         </div>
@@ -183,6 +194,18 @@
       </div>
     </div>
   </UModal>
+  <UModal v-model="isLoadModalOpen">
+    <div class="modal-content">
+      <h2 class="modal-title">Sehtest ID eingeben</h2>
+      <div class="modal-body">
+        <UInput v-model="inputTestId" placeholder="Sehtest ID eingeben" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="loadTest">Laden</button>
+        <button class="btn" @click="isLoadModalOpen = false">Abbrechen</button>
+      </div>
+    </div>
+  </UModal>
 </template>
 
 <script setup>
@@ -190,14 +213,16 @@ import { ref, onMounted } from "vue";
 import { watch } from "vue";
 
 const testItemsEndpoint = "http://localhost:8000/api/test_configs/1";
-const saveTestEndpoint = "http://localhost:8000/api/save_test";
-const loadTestEndpoint = "http://localhost:8000/api/load_test";
+const saveTestEndpoint = "http://localhost:8000/api/test_configs";
+const loadTestEndpoint = "http://localhost:8000/api/test_configs/";
 
 const testItems = ref([]);
 const selectedItems = ref([]);
 const fetchError = ref(false);
 const testId = ref("");
 const isOpen = ref(false);
+const isLoadModalOpen = ref(false);
+const inputTestId = ref("");
 
 const circleColor = ref("#ffcc00");
 const triangleColor = ref("#3333ff");
@@ -247,10 +272,18 @@ const getSelectionOrder = (id) => selectedItems.value.indexOf(id) + 1;
 
 const saveTest = async () => {
   try {
-    const response = await $fetch(saveTestEndpoint, {
+    // Authentifizierungs-Token (falls vorhanden) abrufen
+    const token = localStorage.getItem("authToken"); // Angenommen, das Token wird im `localStorage` gespeichert
+
+    // Sende die Anfrage mit dem Authentifizierungs-Header
+    const response = await $fetch("http://localhost:8000/api/test_configs/", {
       method: "POST",
       body: { items: selectedItems.value },
+      headers: {
+        Authorization: `Bearer ${token}`, // Token im Header mitsenden
+      },
     });
+
     alert(`Sehtest erfolgreich gespeichert! ID: ${response.testId}`);
   } catch (error) {
     console.error("Fehler beim Speichern des Sehtests:", error);
@@ -264,11 +297,12 @@ const loadTest = async () => {
   try {
     const response = await $fetch(loadTestEndpoint, {
       method: "POST",
-      body: { testId: testId.value },
+      body: { testId: inputTestId.value }, // Verwende die ID aus dem Modal
     });
     selectedItems.value = response.items;
     selectedOrder.value = [...response.items]; // Reihenfolge basierend auf den geladenen Items
     alert("Sehtest erfolgreich geladen!");
+    isLoadModalOpen.value = false; // Schließe das Modal nach dem Laden
   } catch (error) {
     console.error("Fehler beim Laden des Sehtests:", error);
     alert(
@@ -297,7 +331,9 @@ const duplicateItem = (index) => {
 };
 
 const deleteItem = (index) => {
+  const itemId = testItems.value[index].id;
   testItems.value.splice(index, 1);
+  selectedItems.value = selectedItems.value.filter((id) => id !== itemId);
 };
 
 const setModalOrientation = (newOrientation) => {
@@ -340,6 +376,11 @@ onMounted(fetchTestItems);
 </script>
 
 <style scoped>
+h1 {
+  font-size: x-large;
+  margin: 20px;
+}
+
 .configurator {
   text-align: center;
   padding: 20px;
@@ -548,4 +589,42 @@ onMounted(fetchTestItems);
   position: relative; /* Positionierung innerhalb des Containers */
 }
 
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+  padding: 40px;
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: #185262;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.btn {
+  background-color: #185262;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background-color: #133b4b;
+}
 </style>
