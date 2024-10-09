@@ -12,6 +12,18 @@
             @close="incorrect_error = null"
             class="mb-4"
         />
+        <!-- Existing Account Alert -->
+        <UAlert
+            icon="i-heroicons-command-line"
+            color="red"
+            variant="subtle"
+            title="Konto existiert bereits"
+            :description="`Das Konto ist bereits registriert und mit einem Passwort geschützt. Bitte melden Sie sich mit Ihrem Passwort an.`"
+            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'white', variant: 'link', padded: false }"
+            v-if="account_exists_error"
+            @close="account_exists_error = null"
+            class="mb-4"
+        />
         <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
             <!-- Email -->
             <UFormGroup label="Email" name="email">
@@ -65,8 +77,10 @@
 
 <script setup>
 import { object, string } from 'yup';
+import { useRoute } from 'vue-router';
 
 const config = useRuntimeConfig();
+const route = useRoute();
 
 const schema = object({
     email: string().email('Ungültige Email').required('Pflicht'),
@@ -79,7 +93,13 @@ const state = reactive({
 });
 
 const incorrect_error = ref(false);
+const account_exists_error = ref(false);
 const other_error = ref(null);
+
+// Check for error query parameter to display account exists error
+if (route.query.error === 'account_exists_with_password') {
+    account_exists_error.value = true;
+}
 
 async function onSubmit(event) {
     event.preventDefault();
