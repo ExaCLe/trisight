@@ -1,5 +1,6 @@
 import datetime
 from typing import List, Optional
+import uuid
 
 from sqlalchemy import (
     String,
@@ -110,6 +111,11 @@ class User(Base):
         back_populates="user"
     )
 
+    # New relationship for password reset tokens
+    password_reset_tokens: Mapped[List["PasswordResetToken"]] = relationship(
+        back_populates="user"
+    )
+
 
 class ItemConfigResult(Base):
     __tablename__ = "item_config_result"
@@ -196,3 +202,15 @@ class TestConfigResult(Base):
     test_config: Mapped["TestConfig"] = relationship(
         back_populates="test_config_results"
     )
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_token"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    token: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+
+    # ForeignKey relationship with User
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="password_reset_tokens")

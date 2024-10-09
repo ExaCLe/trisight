@@ -113,3 +113,16 @@ class TestConfigResultResponse(BaseModel):
     item_config_results: List[ItemConfigResultResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ForgetPassword(BaseModel):
+    email: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResetPassword(BaseModel):
+    token: str
+    new_password: str
+
+    model_config = ConfigDict(from_attributes=True)

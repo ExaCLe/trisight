@@ -8,6 +8,7 @@ cd frontend && yarn install
 cd ..
 echo "BACKEND_URL=http://localhost:8000" > frontend/.env
 echo "SECRET_KEY=$(openssl rand -hex 32)" > backend/.env
+echo "FRONTEND_URL=http://localhost:3000" >> backend/.env
 ```
 
 # Running backend and frontend
