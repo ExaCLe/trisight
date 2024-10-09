@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./test.db"  # Default to SQLite for development
+    SECRET_KEY: str = "secret"  # Default to a simple secret key
 
     class Config:
         env_file = ".env"  # Load environment variables from a .env file
