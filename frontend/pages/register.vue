@@ -45,6 +45,8 @@
 <script setup>
 import {object, string } from 'yup'
 
+const config = useRuntimeConfig();
+
 const schema = object({
     email: string().email('Ungültige Email').required('Pflicht'),
     username: string()
