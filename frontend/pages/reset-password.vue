@@ -54,6 +54,7 @@
 import { object, string, ref as yupRef } from 'yup'
 import { reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
+const config = useRuntimeConfig();
 
 // Form validation schema using yup
 const schema = object({
@@ -85,7 +86,7 @@ async function onSubmit(event) {
 
     try {
         // Send request to backend to reset the password
-        const response = await $fetch('http://localhost:8000/api/users/reset-password', {
+        const response = await $fetch(`${config.public.backendUrl}/api/users/reset-password`, {
             method: 'POST',
             body: { token, new_password: state.new_password },
         })
