@@ -450,7 +450,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   height: 90vh;
-  background-color: #fff8ec;
+  background-color: #ffffff;
 }
 
 .score-timer {
@@ -496,7 +496,7 @@ onUnmounted(() => {
 
 .timer-path {
   fill: none;
-  stroke: #fff8ec;
+  stroke: #ffffff;
   stroke-width: 10;
   stroke-dasharray: 314; /* Beispiel für einen Umfang bei Radius 50 */
   transform: rotate(-90deg);
@@ -561,7 +561,7 @@ onUnmounted(() => {
   color: #185262;
   font-size: 40px;
   font-weight: bold;
-  background-color: #fff8ec; /* Hintergrundfarbe bei Spielende */
+  background-color: #ffffff; /* Hintergrundfarbe bei Spielende */
   text-align: center;
 }
 
@@ -586,7 +586,7 @@ onUnmounted(() => {
 
 .button {
   background-color: #185262;
-  color: #fff8ec;
+  color: #ffffff;
   padding: 10px 20px;
   border: none;
   border-radius: 40px;

@@ -2,7 +2,33 @@
   <div class="configurator">
     <h1>Konfigurieren Sie Ihren Sehtest</h1>
 
-    <!-- Fehlermeldung anzeigen, wenn ein Fehler beim Laden der Daten auftritt -->
+    <!-- Name des aktuell geladenen Sehtests anzeigen -->
+    <!-- Name des aktuell geladenen Sehtests anzeigen oder als bearbeitbares Feld -->
+    <div v-if="loadedTestId" class="loaded-test-name">
+      <h2>
+        Konfiguration:
+        <input v-model="loadedTestName" class="test-name-input" />
+      </h2>
+    </div>
+    <div v-else class="loaded-test-name">
+      <h2>Konfiguration: {{ loadedTestName }}</h2>
+    </div>
+
+    <p class="select-info">
+      Bitte wählen Sie die Kacheln aus, die Sie in Ihrer Konfiguration speichern
+      möchten.
+    </p>
+
+    <UAlert
+            icon="i-heroicons-command-line"
+            color="red"
+            variant="subtle"
+            title="Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
+            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'white', variant: 'link', padded: false }"
+            v-if="showToast"
+            class="mb-4"
+        />
+
     <div class="error-alert" v-if="fetchError">
       Es gab ein Problem beim Abrufen der Testkonfigurationen. Bitte versuchen
       Sie es erneut.
@@ -71,10 +97,12 @@
       <UButton
         class="btn"
         style="padding: 8px 20px; font-size: 16px"
-        @click="saveTest"
+        @click="handleSaveTestConfig"
         variant="solid"
       >
-        Sehtest speichern ({{ selectedItems.length }})
+        {{ loadedTestId ? "Sehtest aktualisieren" : "Sehtest speichern" }} ({{
+          selectedItems.length
+        }})
       </UButton>
 
       <UButton
@@ -88,6 +116,8 @@
       </UButton>
     </div>
   </div>
+
+  
 
   <UModal v-model="isOpen">
     <div class="modal-content">
@@ -206,6 +236,35 @@
       </div>
     </div>
   </UModal>
+  <UModal v-model="isNameModalOpen">
+    <div class="modal-content">
+      <h2 class="modal-title">Konfigurationsnamen eingeben</h2>
+      <div class="modal-body">
+        <UInput
+          v-model="configName"
+          placeholder="Namen der Konfiguration eingeben"
+        />
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="{ saveTestConfig(); isNameModalOpen = false; }">Speichern</button>
+        <button class="btn" @click="isNameModalOpen = false">Abbrechen</button>
+      </div>
+    </div>
+  </UModal>
+  <UModal v-model="isSelectionWarningOpen">
+    <div class="modal-content">
+      <h2 class="modal-title">Leere Konfiguration</h2>
+      <div class="modal-body">
+        <p>
+          Sie haben keine Kacheln ausgewählt. Bitte wählen Sie mindestens eine
+          Kachel aus, bevor Sie die Konfiguration speichern.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="isSelectionWarningOpen = false">OK</button>
+      </div>
+    </div>
+  </UModal>
 </template>
 
 <script setup>
@@ -220,10 +279,19 @@ const testItems = ref([]);
 const selectedItems = ref([]);
 const fetchError = ref(false);
 const testId = ref("");
+const inputTestId = ref("");
+const configName = ref("");
+const loadedTestName = ref("");
+const showToast = ref(false);
+const toastMessage = ref("");
+
+// modale 
 const isOpen = ref(false);
 const isLoadModalOpen = ref(false);
-const inputTestId = ref("");
+const isSelectionWarningOpen = ref(false);
+const isNameModalOpen = ref(false);
 
+// item confing
 const circleColor = ref("#ffcc00");
 const triangleColor = ref("#3333ff");
 const circleSize = ref(150);
@@ -239,6 +307,22 @@ const fetchTestItems = async () => {
     console.error("Fehler beim Abrufen der Testkonfigurationen:", error);
     fetchError.value = true;
   }
+};
+
+const showWarning = (message) => {
+  toastMessage.value = message;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000); // Toast verschwindet nach 3 Sekunden
+};
+
+const handleSaveTestConfig = () => {
+  if (selectedItems.value.length === 0) {
+    showWarning("Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern.");
+    return;
+  }
+  isNameModalOpen.value = true;
 };
 
 watch(triangleSize, (newValue) => {
@@ -273,7 +357,7 @@ const getSelectionOrder = (id) => selectedItems.value.indexOf(id) + 1;
 const saveTest = async () => {
   try {
     // Authentifizierungs-Token (falls vorhanden) abrufen
-    const token = localStorage.getItem("authToken"); // Angenommen, das Token wird im `localStorage` gespeichert
+    const token = localStorage.getItem("token"); // Angenommen, das Token wird im `localStorage` gespeichert
 
     // Sende die Anfrage mit dem Authentifizierungs-Header
     const response = await $fetch("http://localhost:8000/api/test_configs/", {
@@ -295,19 +379,39 @@ const saveTest = async () => {
 
 const loadTest = async () => {
   try {
-    const response = await $fetch(loadTestEndpoint, {
-      method: "POST",
-      body: { testId: inputTestId.value }, // Verwende die ID aus dem Modal
+    const token = localStorage.getItem("token");
+    const response = await $fetch(`${loadTestEndpoint}${inputTestId.value}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-    selectedItems.value = response.items;
-    selectedOrder.value = [...response.items]; // Reihenfolge basierend auf den geladenen Items
-    alert("Sehtest erfolgreich geladen!");
-    isLoadModalOpen.value = false; // Schließe das Modal nach dem Laden
+
+    if (response && response.item_configs) {
+      testItems.value = response.item_configs;
+      selectedItems.value = response.item_configs.map((item) => item.id);
+
+      loadedTestId.value = response.id; // Speichere die Test-ID für spätere Updates
+      loadedTestName.value = response.name;
+
+      toast.add({
+        title: "Sehtest erfolgreich geladen!",
+        id: "load-success",
+        color: "green",
+      });
+
+      isLoadModalOpen.value = false;
+    } else {
+      throw new Error("Ungültige Antwortstruktur.");
+    }
   } catch (error) {
     console.error("Fehler beim Laden des Sehtests:", error);
-    alert(
-      "Es gab ein Problem beim Laden des Sehtests. Bitte versuchen Sie es erneut."
-    );
+    toast.add({
+      title:
+        "Fehler beim Laden der Konfiguration. Bitte versuchen Sie es erneut.",
+      id: "load-error",
+      color: "red",
+    });
   }
 };
 
@@ -354,18 +458,92 @@ const getCircleSize = (size) => Math.min(size * 0.8, 80);
 
 const getTriangleSize = (size) => Math.min(size * 0.5, 40);
 
-const saveItemConfig = () => {
+const saveItemConfig = async () => {
+  // Erstelle die neue Item-Konfiguration basierend auf den Modal-Werten
   const newItem = {
-    id: Date.now(),
-    circle_color: circleColor.value,
+    triangle_size: triangleSize.value,
     triangle_color: triangleColor.value,
     circle_size: circleSize.value,
-    triangle_size: triangleSize.value,
+    circle_color: circleColor.value,
+    time_visible_ms: 5000, // Beispielwert für Sichtbarkeitsdauer, kann angepasst werden
     orientation: modalOrientation.value,
   };
-  testItems.value.push(newItem);
-  isOpen.value = false;
+
+  try {
+    const token = localStorage.getItem("token");
+    const response = await $fetch("http://localhost:8000/api/item_configs", {
+      method: "POST",
+      body: newItem,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // Füge das zurückgegebene Item zu `testItems` hinzu, wenn die Speicherung erfolgreich war
+    testItems.value.push({
+      ...response,
+      id: response.id, // ID vom Backend übernehmen
+    });
+    selectedItems.value.push(response.id);
+    // Schließe das Modal nach dem Speichern
+    isOpen.value = false;
+  } catch (error) {
+    console.error("Fehler beim Speichern des Items:", error);
+    alert(
+      "Es gab ein Problem beim Speichern des Items. Bitte versuchen Sie es erneut."
+    );
+  }
 };
+
+const loadedTestId = ref(null); // Referenz für die aktuell geladene Test-ID
+
+const saveTestConfig = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const saveUrl = loadedTestId.value
+      ? `http://localhost:8000/api/test_configs/${loadedTestId.value}`
+      : "http://localhost:8000/api/test_configs";
+
+    const method = loadedTestId.value ? "PUT" : "POST";
+
+    const response = await $fetch(saveUrl, {
+      method: method,
+      body: {
+        name: loadedTestId.value ? loadedTestName.value : configName.value,
+        item_config_ids: selectedItems.value,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("Response:", response);
+
+    toast.add({
+      title: loadedTestId.value
+        ? "Sehtest-Konfiguration erfolgreich aktualisiert!"
+        : "Sehtest-Konfiguration erfolgreich gespeichert!",
+      id: loadedTestId.value ? "update-success" : "save-success",
+      color: "green",
+    });
+
+    if (!loadedTestId.value) {
+      loadedTestId.value = response.id;
+      loadedTestName.value = configName.value;
+    }
+
+    // Modal schließen, wenn die Speicherung erfolgreich war
+    isNameModalOpen.value = false;  // Diese Zeile muss sichergestellt werden
+  } catch (error) {
+    console.error("Fehler beim Speichern der Konfiguration:", error);
+    toast.add({
+      title: "Fehler beim Speichern der Konfiguration.",
+      id: "config-error",
+      color: "red",
+    });
+  }
+};
+
 
 const adjustTriangleSize = (change) => {
   const newSize = triangleSize.value + change;
@@ -399,18 +577,27 @@ h1 {
 }
 
 .test-tile {
-  border: 2px solid #ccc;
+  border: none;
   width: 150px;
   height: 150px;
   padding: 10px;
   cursor: pointer;
   transition: all 0.2s;
   border-radius: 15px;
+  background-color: #f5f5f5;
+  box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.15),
+    -8px -8px 16px rgba(255, 255, 255, 0.7);
 }
 
 .test-tile.selected {
-  border: 1px dashed #000;
-  background-color: #e0f7fa;
+  border: 2px solid #ee9b57;
+  background-color: #ffffff;
+  box-shadow: 0 12px 20px -10px rgba(0, 0, 0, 0.25),
+    0 8px 10px -6px rgba(0, 0, 0, 0.3);
+}
+
+.test-tile:hover {
+  transform: translateY(-10px);
 }
 
 .add-item-tile {
@@ -434,7 +621,7 @@ h1 {
 }
 
 .button-group {
-  margin-top: 20px;
+  margin-top: 40px;
   display: flex;
   justify-content: center;
   gap: 20px;
@@ -627,4 +814,32 @@ h1 {
 .btn:hover {
   background-color: #133b4b;
 }
+
+.loaded-test-name {
+  margin-bottom: 20px;
+  font-size: 1.2em;
+  color: #185262;
+}
+
+.test-name-input {
+  font-size: 1em;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 200px;
+  margin-left: 10px;
+}
+
+.select-info {
+  margin-bottom: 30px;
+  font-size: 14px;
+  color: #666;
+}
+
+.toast-warning {
+  position: absolute;
+  color: red;
+  top: 20%;
+}
+
 </style>

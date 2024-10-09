@@ -43,7 +43,7 @@ export default {
   flex-direction: column;
   align-items: center;
   padding: 40px;
-  background-color: #fff8ec;
+  background-color: #f5f5f5;
   min-height: 90vh;
   text-align: center;
 }
