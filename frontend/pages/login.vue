@@ -63,7 +63,7 @@ async function onSubmit(event) {
         loginFormData.append('username', state.email);
         loginFormData.append('password', state.password);
 
-        const login_response = await $fetch('http://localhost:8000/api/users/login', {
+        const login_response = await $fetch(`${config.public.backendUrl}/api/users/login`, {
             method: 'POST',
             body: loginFormData
         })

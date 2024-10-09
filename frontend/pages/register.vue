@@ -55,7 +55,7 @@ const schema = object({
                 return true;
             }
             try {
-                const response = await fetch(`http://localhost:8000/api/users/exists/${value}`);
+                const response = await fetch(`${config.public.backendUrl}/api/users/exists/${value}`);
                 const data = await response.json();
                 return data.exists === false;
             } catch (error) {
@@ -82,7 +82,7 @@ async function onSubmit(event) {
     email_error.value = null
 
     try {
-        const response = await $fetch('http://localhost:8000/api/users/register', {
+        const response = await $fetch(`${config.public.backendUrl}/api/users/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -95,7 +95,7 @@ async function onSubmit(event) {
         loginFormData.append('username', state.email);
         loginFormData.append('password', state.password);
 
-        const login_response = await $fetch('http://localhost:8000/api/users/login', {
+        const login_response = await $fetch(`${config.public.backendUrl}/api/users/login`, {
             method: 'POST',
             body: loginFormData
         })

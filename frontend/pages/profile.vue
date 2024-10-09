@@ -11,14 +11,14 @@ async function logout() {
   if (!import.meta.env.SSR) {
     try {
       // Remove the token on the server 
-      await $fetch('http://localhost:8000/api/users/me', {
+      await $fetch(`${config.public.backendUrl}/api/users/me`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
       // Remove the token on the server 
-      await $fetch('http://localhost:8000/api/users/logout', {
+      await $fetch(`${config.public.backendUrl}/api/users/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
