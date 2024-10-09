@@ -59,6 +59,7 @@ const schema = object({
                 const data = await response.json();
                 return data.exists === false;
             } catch (error) {
+                console.error(error)
                 return true; // assume it does not exist
             }
         }),
