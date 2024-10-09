@@ -6,6 +6,7 @@
 
 <script setup>
 const toast = useToast()
+const config = useRuntimeConfig();
 
 async function logout() {
   if (!import.meta.env.SSR) {
