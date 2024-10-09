@@ -229,7 +229,7 @@ h1 {
 }
 
 .test-button {
-  background-color: #fff8ec;
+  background-color: #ffffff;
   color: #185262;
   border: none;
   padding: 10px 20px;
@@ -243,12 +243,12 @@ h1 {
 
 .test-button:hover {
   background-color: #0f3e4b;
-  color: #fff8ec;
+  color: #ffffff;
 }
 
 .button-quick {
   background-color: #ffffff00;
-  color: #fff8ec;
+  color: #ffffff;
   border: solid 1px;
   padding: 10px 20px;
   border-radius: 20px;
@@ -260,7 +260,7 @@ h1 {
 }
 
 .info-section {
-  background-color: #fff8ec;
+  background-color: #ffffff;
   color: rgb(56, 56, 56);
   height: auto; /* Automatische Höhe, damit es sich an den Inhalt anpasst */
   padding: 40px;

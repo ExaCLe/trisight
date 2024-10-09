@@ -45,7 +45,7 @@
     justify-content: center;
     text-align: center;
     min-height: 90vh;
-    background-color: #fff8ec;
+    background-color: #ffffff;
     padding: 40px;
   }
   
@@ -71,7 +71,7 @@
   
   .difficulty-button {
     background-color: #185262;
-    color: #fff8ec;
+    color: #ffffff;
     padding: 15px 30px;
     border-radius: 10px;
     font-size: 18px;
