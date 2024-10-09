@@ -24,7 +24,7 @@ Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Update with your Nuxt.js origin
+    allow_origins=[os.getenv("FRONTEND_URL")],  # Update with your Nuxt.js origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
