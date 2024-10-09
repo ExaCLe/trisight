@@ -3,12 +3,14 @@ from datetime import datetime, timedelta, timezone
 from sqlite3 import IntegrityError
 from typing import Annotated
 
+from fastapi.responses import JSONResponse, RedirectResponse
 import jwt
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from authlib.integrations.starlette_client import OAuth
 
 from backend.utils import get_db
 from backend.schemas import Token, TokenData, UserToRegister, UserResponse
@@ -44,8 +46,16 @@ def authenticate_user(db: Session, email: str, password: str):
     user = get_user(db, email)
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
-        return False
+    print(
+        user.hashed_password, password, verify_password(password, user.hashed_password)
+    )
+    if user.hashed_password:
+        if not verify_password(password, user.hashed_password):
+            return False
+    else:
+        # User registered via social login, but password provided
+        if password:
+            return False
     return user
 
 
@@ -178,3 +188,69 @@ async def logout(token: str = Depends(oauth2_scheme), db: Session = Depends(get_
         raise HTTPException(status_code=422, detail=f"Constraint error: {e.orig}")
 
     return {"detail": "Successfully logged out"}
+
+
+oauth = OAuth()
+
+
+def init_oauth():
+    oauth.register(
+        name="google",
+        client_id=os.getenv("GOOGLE_CLIENT_ID"),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+        authorize_url="https://accounts.google.com/o/oauth2/auth",
+        access_token_url="https://oauth2.googleapis.com/token",
+        client_kwargs={"scope": "openid email profile"},
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        jwks_uri="https://www.googleapis.com/oauth2/v3/certs",
+    )
+
+
+@router.get("/login/google")
+async def login_google(request: Request):
+    redirect_uri = request.url_for("auth_google")
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
+@router.route("/auth/google")
+async def auth_google(request: Request):
+    db_gen = get_db()
+    db = next(db_gen)  # Get the Session instance from the generator
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        user_info = token.get("userinfo")
+
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Invalid Google login")
+
+        # Check if the user already exists in the database
+        user = get_user(db, user_info["email"])
+        if user:
+            # If the user exists and has a password, they were originally registered without social login
+            if user.hashed_password:
+                # Redirect to frontend login page with an error message
+                frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+                redirect_url = (
+                    f"{frontend_url}/login?error=account_exists_with_password"
+                )
+                return RedirectResponse(url=redirect_url)
+        else:
+            # Create a new user if they don't exist
+            user = models.User(
+                email=user_info["email"],
+                username=user_info.get("name", user_info["email"]),
+                hashed_password=None,  # Passwords not needed for social logins
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        # Create an access token for the user
+        access_token = create_access_token(db, data={"sub": user.username})
+
+        # Redirect to the frontend with the token as a query parameter
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        redirect_url = f"{frontend_url}/auth/callback?access_token={access_token}"
+        return RedirectResponse(url=redirect_url)
+    finally:
+        db.close()

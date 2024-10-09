@@ -8,6 +8,10 @@
 const toast = useToast()
 const config = useRuntimeConfig();
 
+definePageMeta({
+  middleware: ["auth"]
+})
+
 async function logout() {
   if (!import.meta.env.SSR) {
     try {
