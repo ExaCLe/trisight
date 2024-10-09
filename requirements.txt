@@ -5,3 +5,5 @@ pyjwt
 python-multipart
 python-dotenv
 alembic
+psycopg2
+pydantic-settings

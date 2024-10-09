@@ -6,6 +6,7 @@ pip install requirements.txt
 alembic -x seed_data=true upgrade head
 cd frontend && yarn install
 cd ..
+echo "BACKEND_URL=http://localhost:8000" > frontend/.env
 echo "SECRET_KEY=$(openssl rand -hex 32)" > backend/.env
 ```
 
@@ -34,4 +35,12 @@ yarn dev --open
 alembic revision --autogenerate -m "your message here"
 # apply the changes to the database
 alembic upgrade head
+```
+
+## Backend Database Deployment
+
+Make sure to set the database URL correctly:
+
+```bash
+export DATABASE_URL=postgresql://username:password@hostname:port/dbname
 ```

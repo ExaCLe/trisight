@@ -100,6 +100,8 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 
+const config = useRuntimeConfig();
+
 // Router verwenden, um den Query-Parameter zu erhalten
 const route = useRoute();
 const isTrisightMode = ref(route.query.isTrisightMode === "true");
@@ -169,16 +171,16 @@ const fetchData = async () => {
     if (isTrisightMode.value) {
       switch (difficulty.value) {
         case "medium":
-          endpoint = "http://localhost:8000/api/test_configs/3";
+          endpoint = `${config.public.backendUrl}/api/test_configs/3`;
           break;
         case "hard":
-          endpoint = "http://localhost:8000/api/test_configs/4";
+          endpoint = `${config.public.backendUrl}/api/test_configs/4`;
           break;
         default:
-          endpoint = "http://localhost:8000/api/test_configs/1"; //auch leicht
+          endpoint = `${config.public.backendUrl}/api/test_configs/1`; //auch leicht
       }
     } else {
-      endpoint = "http://localhost:8000/api/test_configs/2";
+      endpoint = `${config.public.backendUrl}/api/test_configs/2`;
     }
     const response = await $fetch(endpoint);
     fetchError.value = false; // Kein Fehler
