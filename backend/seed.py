@@ -1,17 +1,18 @@
 from sqlalchemy.orm import Session
 from backend import models
 from backend.database import SessionLocal
+from backend.user.api_user import get_password_hash
 
 users_to_insert = [
     models.User(
-        name="john_doe",
+        username="john_doe",
         email="john.doe@company.com",
-        password="testpassword",  # TODO: Hash this password when merged with the login feature branch
+        hashed_password=get_password_hash("testpassword"),
     ),
     models.User(
-        name="jane_doe",
+        username="jane_doe",
         email="jane.doe@company.com",
-        password="testpassword",  # TODO: Hash this password when merged with the login feature branch
+        hashed_password=get_password_hash("testpassword"),
     ),
 ]
 

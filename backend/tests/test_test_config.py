@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from backend.models import Base
 from backend.main import app
+from backend.tests.utils import get_user_id_and_token
 from backend.utils import get_db
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./temp_for_tests.db"
@@ -41,23 +43,6 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
-def get_user_id_and_token(username="testuser"):
-    register_response = client.post(
-        "/api/users/register",
-        json={
-            "username": username,
-            "email": "test@test.de",
-            "password": "testpassword",
-        },
-    )
-    login_response = client.post(
-        "/api/users/login", data={"username": username, "password": "testpassword"}
-    )
-    token = login_response.json()["access_token"]
-
-    return token, register_response.json()["id"]
-
-
 # Helper function to insert an ItemConfig and return its ID
 def insert_item_config(token):
     item_config_data = {
@@ -77,7 +62,7 @@ def insert_item_config(token):
 
 
 def test_create_test_config_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     item_config_ids = [insert_item_config(token), insert_item_config(token)]
 
     test_config_data = {"name": "Test Config 1", "item_config_ids": item_config_ids}
@@ -104,7 +89,7 @@ def test_create_test_config_endpoint_unauthorized(setup_database):
 
 
 def test_create_test_config_endpoint_invalid_data(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     test_config_data = {
         "name": "Test Config Invalid",
         "item_config_ids": ["invalid_id_1", "invalid_id_2"],
@@ -118,7 +103,7 @@ def test_create_test_config_endpoint_invalid_data(setup_database):
 
 
 def test_read_test_configs_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # First, create a test config
     item_config_ids = [insert_item_config(token)]
 
@@ -146,7 +131,7 @@ def test_read_test_configs_endpoint(setup_database):
 
 
 def test_read_test_config_by_id_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # First, create a test config
     item_config_ids = [insert_item_config(token)]
 
@@ -176,7 +161,7 @@ def test_read_test_config_by_id_endpoint_invalid_id(setup_database):
 
 
 def test_update_test_config_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # First, create a test config
     item_config_ids = [insert_item_config(token)]
 
@@ -207,8 +192,8 @@ def test_update_test_config_endpoint(setup_database):
 
 
 def test_update_test_config_endpoint_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token("testuser2")
+    token, user_id = get_user_id_and_token(client)
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
     # First, create a test config
     item_config_ids = [insert_item_config(token)]
 
@@ -235,7 +220,7 @@ def test_update_test_config_endpoint_unauthorized(setup_database):
 
 
 def test_update_test_config_endpoint_invalid_id(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # Try to update a test config with an invalid ID
     invalid_id = 928289238
     update_data = {
@@ -251,7 +236,7 @@ def test_update_test_config_endpoint_invalid_id(setup_database):
 
 
 def test_delete_test_config_endpoint(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # First, create a test config
     item_config_ids = [insert_item_config(token)]
 
@@ -279,8 +264,8 @@ def test_delete_test_config_endpoint(setup_database):
 
 
 def test_delete_test_config_endpoint_unauthorized(setup_database):
-    token, user_id = get_user_id_and_token()
-    token2, user_id2 = get_user_id_and_token("testuser2")
+    token, user_id = get_user_id_and_token(client)
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
     # First, create a test config
     item_config_ids = [insert_item_config(token)]
 
@@ -302,7 +287,7 @@ def test_delete_test_config_endpoint_unauthorized(setup_database):
 
 
 def test_delete_test_config_endpoint_invalid_id(setup_database):
-    token, user_id = get_user_id_and_token()
+    token, user_id = get_user_id_and_token(client)
     # Try to delete a test config with an invalid ID
     invalid_id = 928289238
     delete_response = client.delete(

@@ -7,9 +7,24 @@
         class="logo"
       />
     </a>
-    <button class="login-button">Login</button>
+    <NuxtLink v-if="loggedIn" class="login-button" :to="{path: './profile'}">Profile</NuxtLink>
+    <NuxtLink v-else class="login-button" :to="{path: '/login' }">Login</NuxtLink>
   </header>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+
+// Create a reactive loggedIn ref
+const loggedIn = ref(false)
+
+// Check if it's not SSR and update the loggedIn status
+onMounted(() => {
+  if (!import.meta.env.SSR) {
+    loggedIn.value = localStorage.getItem('token') !== null
+  }
+})
+</script>
 
 <style scoped>
 header {
@@ -40,10 +55,20 @@ header {
   font-size: 16px;
   font-weight: bold;
   transition: background-color 0.3s, color 0.3s;
+  text-align: center;
 }
 
 .login-button:hover {
   background-color: #0f3e4b;
   color: #fff8ec;
 }
+
+.logout-button {
+  color: white;
+  /* under line the text */
+  text-decoration: underline;
+  margin-right: 20px;
+  padding: 10px 20px;
+}
+
 </style>
