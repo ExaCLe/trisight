@@ -2,8 +2,7 @@
   <div class="configurator">
     <h1>Konfigurieren Sie Ihren Sehtest</h1>
 
-    <!-- Name des aktuell geladenen Sehtests anzeigen -->
-    <!-- Name des aktuell geladenen Sehtests anzeigen oder als bearbeitbares Feld -->
+
     <div v-if="loadedTestId" class="loaded-test-name">
       <h2>
         Konfiguration:
@@ -631,13 +630,29 @@ h1 {
 }
 
 .test-tile.selected {
-  background-color: #e9e9e9; /* Hellerer Hintergrund zur Hervorhebung */
-  border: 2px dotted rgb(114, 114, 114);
-  box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.3),
-    0 10px 15px -6px rgba(0, 0, 0, 0.2); /* Kräftigerer Schatten */
-  transform: scale(1.05); /* Leichtes Vergrößern bei Auswahl */
-  transition: all 0.3s ease-in-out; /* Weiche Übergänge für die Animationen */
+  background-color: #f0f0f0; 
+  box-shadow: 0 15px 30px -12px rgba(0, 0, 0, 0.4),
+              0 10px 20px -8px rgba(0, 0, 0, 0.2); 
+  transform: translateY(-5px) scale(1.02); 
+  transition: all 0.3s ease-in-out;
+  border: none; 
+  outline: 1px solid rgba(173, 173, 173, 0.2); 
 }
+
+.test-tile.selected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 15px; 
+  border:  1px orange;
+  box-shadow: 0 0 15px rgb(207, 157, 49); 
+  z-index: -1;
+  transition: box-shadow 0.3s ease-in-out;
+}
+
 
 .test-tile:hover {
   box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.3),
