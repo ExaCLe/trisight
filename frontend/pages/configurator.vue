@@ -105,7 +105,7 @@
         @click="handleSaveTestConfig"
         variant="solid"
       >
-        {{ loadedTestId ? "Sehtest aktualisieren" : "Sehtest speichern" }} ({{
+        {{ loadedTestId ? "Sehtest aktualisieren" : "Sehtest speichern"  }} ({{
           selectedItems.length
         }})
       </UButton>
@@ -279,7 +279,6 @@ const loadTestEndpoint = "http://localhost:8000/api/test_configs/";
 const testItems = ref([]);
 const selectedItems = ref([]);
 const fetchError = ref(false);
-const testId = ref("");
 const inputTestId = ref("");
 const configName = ref("");
 const loadedTestName = ref("");
@@ -347,8 +346,9 @@ const saveNewTestConfig = async () => {
       },
     });
 
-    loadedTestId.value = response.id; // Save the new test ID
+    loadedTestId.value = response.id; // Speichert die neue Test-ID
     loadedTestName.value = configName.value;
+    isNameModalOpen.value = false;
 
     toast.add({
       title: "Sehtest erfolgreich gespeichert!",
@@ -356,8 +356,6 @@ const saveNewTestConfig = async () => {
       color: "green",
     });
 
-    // Close the modal
-    isNameModalOpen.value = false;
   } catch (error) {
     console.error("Fehler beim Speichern des Sehtests:", error);
     toast.add({
@@ -367,7 +365,6 @@ const saveNewTestConfig = async () => {
     });
   }
 };
-
 
 
 watch(triangleSize, (newValue) => {
@@ -385,10 +382,6 @@ const adjustCircleSize = (change) => {
   if (newSize >= 50 && newSize <= 200) circleSize.value = newSize;
 };
 
-const openModal = () => {
-  isOpen.value = true;
-};
-
 const toggleSelection = (id) => {
   if (selectedItems.value.includes(id)) {
     selectedItems.value = selectedItems.value.filter((itemId) => itemId !== id);
@@ -397,30 +390,6 @@ const toggleSelection = (id) => {
   }
 };
 
-const getSelectionOrder = (id) => selectedItems.value.indexOf(id) + 1;
-
-const saveTest = async () => {
-  try {
-    // Authentifizierungs-Token (falls vorhanden) abrufen
-    const token = localStorage.getItem("token"); // Angenommen, das Token wird im `localStorage` gespeichert
-
-    // Sende die Anfrage mit dem Authentifizierungs-Header
-    const response = await $fetch("http://localhost:8000/api/test_configs/", {
-      method: "POST",
-      body: { items: selectedItems.value },
-      headers: {
-        Authorization: `Bearer ${token}`, // Token im Header mitsenden
-      },
-    });
-
-    alert(`Sehtest erfolgreich gespeichert! ID: ${response.testId}`);
-  } catch (error) {
-    console.error("Fehler beim Speichern des Sehtests:", error);
-    alert(
-      "Es gab ein Problem beim Speichern des Sehtests. Bitte versuchen Sie es erneut."
-    );
-  }
-};
 
 const loadTest = async () => {
   try {
@@ -438,6 +407,7 @@ const loadTest = async () => {
 
       loadedTestId.value = response.id; // Speichere die Test-ID für spätere Updates
       loadedTestName.value = response.name;
+      isLoadModalOpen.value = false;
 
       toast.add({
         title: "Sehtest erfolgreich geladen!",
@@ -445,7 +415,6 @@ const loadTest = async () => {
         color: "green",
       });
 
-      isLoadModalOpen.value = false;
     } else {
       throw new Error("Ungültige Antwortstruktur.");
     }
@@ -541,16 +510,6 @@ const saveItemConfig = async () => {
 };
 
 const loadedTestId = ref(null); // Referenz für die aktuell geladene Test-ID
-
-const openNameModalForNewTest = () => {
-  if (selectedItems.value.length === 0) {
-    showWarning(
-      "Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
-    );
-    return;
-  }
-  isNameModalOpen.value = true; // Öffne das Namens-Modal nur für neue Sehtests
-};
 
 // Neue Methode für die direkte Aktualisierung der Konfiguration
 const updateTestConfig = async () => {
