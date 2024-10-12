@@ -589,13 +589,18 @@ h1 {
 }
 
 .test-tile.selected {
-  background-color: #f0f0f0; 
-  box-shadow: 0 15px 30px -12px rgba(0, 0, 0, 0.4),
-              0 10px 20px -8px rgba(0, 0, 0, 0.2); 
-  transform: translateY(-5px) scale(1.02); 
-  transition: all 0.3s ease-in-out;
+  background-color: #f7f7f7; /* Leichte Aufhellung der Hintergrundfarbe */
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.3),
+              0 8px 16px -8px rgba(0, 0, 0, 0.15); /* Weicherer Schatten */
+  transform: translateY(-3px) scale(1.03); /* Leichte Anpassung von Scale und Position */
+  transition: transform 0.25s ease, box-shadow 0.3s ease-in-out, background-color 0.3s ease;
   border: none; 
-  outline: 1px solid rgba(173, 173, 173, 0.2); 
+  outline: none;
+  position: relative;
+}
+
+.test-tile.selected:hover {
+  background-color: #eaeaea; /* Aufhellung beim Hover für mehr Interaktivität */
 }
 
 .test-tile.selected::before {
@@ -606,19 +611,22 @@ h1 {
   right: 0;
   bottom: 0;
   border-radius: 15px; 
-  border:  1px orange;
-  box-shadow: 0 0 15px rgb(207, 157, 49); 
+  border: 1px solid #c7c7c7; /* Leichter Grauton für die Border */
+  box-shadow: 0 0 15px #d9a858; /* Dezenterer Schimmer-Effekt */
   z-index: -1;
-  transition: box-shadow 0.3s ease-in-out;
+  transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease;
 }
 
+.test-tile:focus {
+  outline: none; 
+}
 
 .test-tile:hover {
-  box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.3),
-    0 10px 15px -6px rgba(0, 0, 0, 0.2); /* Kräftigerer Schatten */
-  transform: scale(1.05); /* Leichtes Vergrößern bei Auswahl */
-  transition: all 0.3s ease-in-out; /* Weiche Übergänge für die Animationen */
+  box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.35),
+              0 12px 20px -8px rgba(0, 0, 0, 0.25); /* Verfeinerter Hover-Schatten */
+  transform: translateY(-6px) scale(1.04); /* Stärkerer Effekt beim Hover */
 }
+
 
 .add-item-tile {
   border: 2px dashed #ccc;
