@@ -7,3 +7,4 @@ python-dotenv
 alembic
 psycopg2
 pydantic-settings
+authlib
