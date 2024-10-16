@@ -91,7 +91,7 @@ class User(Base):
 
     username: Mapped[str] = mapped_column(String)
     email: Mapped[str] = mapped_column(String)
-    hashed_password: Mapped[str] = mapped_column(String)
+    hashed_password: Mapped[str] = mapped_column(String, nullable=True)
 
     issued_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, nullable=True
