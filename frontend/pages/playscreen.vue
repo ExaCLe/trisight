@@ -102,6 +102,8 @@ import { useRoute } from "vue-router";
 
 const config = useRuntimeConfig();
 
+const toast = useToast(); 
+
 // Router verwenden, um den Query-Parameter zu erhalten
 const route = useRoute();
 const isTrisightMode = ref(route.query.isTrisightMode === "true");
@@ -119,6 +121,7 @@ const isGameStarted = ref(false); // Neuer Zustand zur Überprüfung, ob das Spi
 const remainingGameTime = ref(60); // Verbleibende Zeit für das Spiel in Sekunden
 const randomizedItems = ref([]);
 const fetchError = ref(false);
+const itemConfigResultIds = ref([]); // To store the IDs of item_config_results
 
 // Begrenzte Größen für das Dreieck und den Kreis
 const limitedTriangleSize = computed(() =>
@@ -164,30 +167,33 @@ const startGameTimer = () => {
   }, 1000); // Der Timer reduziert sich jede Sekunde
 };
 
+// Function to get test_config_id based on difficulty and mode
+const getTestConfigId = () => {
+  if (isTrisightMode.value) {
+    switch (difficulty.value) {
+      case "medium":
+        return 3;
+      case "hard":
+        return 4;
+      default:
+        return 1; // Easy mode
+    }
+  } else {
+    return 2; // Standard mode
+  }
+};
+
+
 // Funktion zum Abrufen der Daten basierend auf dem Schwierigkeitsgrad
 const fetchData = async () => {
   try {
-    let endpoint;
-    if (isTrisightMode.value) {
-      switch (difficulty.value) {
-        case "medium":
-          endpoint = `${config.public.backendUrl}/api/test_configs/3`;
-          break;
-        case "hard":
-          endpoint = `${config.public.backendUrl}/api/test_configs/4`;
-          break;
-        default:
-          endpoint = `${config.public.backendUrl}/api/test_configs/1`; //auch leicht
-      }
-    } else {
-      endpoint = `${config.public.backendUrl}/api/test_configs/2`;
-    }
+    const testConfigId = getTestConfigId(); // Get test_config_id
+    const endpoint = `${config.public.backendUrl}/api/test_configs/${testConfigId}`;
     const response = await $fetch(endpoint);
-    fetchError.value = false; // Kein Fehler
+    fetchError.value = false; // No error
     return response;
   } catch (error) {
-    console.error("Fehler beim Abrufen der Konfigurationen:", error);
-    fetchError.value = true; // Setze Fehlerzustand
+    fetchError.value = true; // Set error state
     return null;
   }
 };
@@ -256,11 +262,52 @@ const handleKeyPress = (event) => {
 };
 
 const checkAnswer = (direction) => {
-  if (direction === currentItem.value.orientation) {
+  const isCorrect = direction === currentItem.value.orientation;
+  const reactionTime = totalTime.value - remainingTime.value;
+
+  submitItemConfigResult(
+    currentItem.value.id,
+    isCorrect,
+    reactionTime,
+    direction // This is the user's response (direction)
+  );
+
+  if (isCorrect) {
     score.value += 1;
   }
   loadNextItem();
 };
+
+const submitTestConfigResult = async () => {
+  try {
+    const token = localStorage.getItem('token'); // Get token from localStorage
+    const testConfigId = getTestConfigId(); // Get test_config_id based on difficulty and mode
+
+    const payload = {
+      test_config_id: testConfigId, // Use the dynamically retrieved test_config_id
+      time: new Date().toISOString(),
+      correct_answers: score.value,
+      wrong_answers: randomizedItems.value.length - score.value,
+      item_config_result_ids: itemConfigResultIds.value, // Use the stored result IDs from item_config submissions
+    };
+
+    await $fetch(`${config.public.backendUrl}/api/test_config_results/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`, // Add Bearer token to the request
+      },
+      body: payload,
+    });
+  } catch (error) {
+    // Show error toast
+    toast.add({
+      title: 'Error',
+      description: 'Failed to submit test results. Please try again.',
+      type: 'error', // success, error, warning, or info
+    });
+  }
+};
+
 
 const loadNextItem = () => {
   if (currentIndex.value < randomizedItems.value.length - 1) {
@@ -277,10 +324,13 @@ const loadNextItem = () => {
 };
 
 const endGame = () => {
-  isGameOver.value = true; // Setze den Spielzustand auf "vorbei"
-  clearInterval(timer.value); // Stoppe den Timer
-  clearInterval(gameTimer.value); // Stoppe den Game Timer
-  removeKeyListener(); // Entferne die Event-Listener für die Pfeiltasten
+  isGameOver.value = true; // Set game status to 'over'
+  clearInterval(timer.value); // Stop the timer
+  clearInterval(gameTimer.value); // Stop the game timer
+  removeKeyListener(); // Remove event listeners for key presses
+  
+  // Submit the final test results to the backend
+  submitTestConfigResult();
 };
 
 const removeKeyListener = () => {
@@ -331,6 +381,38 @@ const getRotationStyle = (orientation) => {
   }
 
   return { rotation, margin };
+};
+
+const submitItemConfigResult = async (itemConfigId, isCorrect, reactionTime, response) => {
+  try {
+    const token = localStorage.getItem('token'); // Get token from localStorage
+    const payload = {
+      item_config_id: itemConfigId,
+      correct: isCorrect,
+      reaction_time_ms: reactionTime,
+      response: response,
+    };
+
+    const result = await $fetch(`${config.public.backendUrl}/api/item_config_results/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`, // Add Bearer token to the request
+      },
+      body: payload,
+    });
+
+    // Store the returned id from the successful POST request
+    if (result && result.id) {
+      itemConfigResultIds.value.push(result.id);
+    }
+  } catch (error) {
+    // Show error toast
+    toast.add({
+      title: 'Error',
+      description: 'Failed to submit test results. Please try again.',
+      type: 'error', // success, error, warning, or info
+    });
+  }
 };
 
 onMounted(() => {
