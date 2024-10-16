@@ -193,7 +193,6 @@ const fetchData = async () => {
     fetchError.value = false; // No error
     return response;
   } catch (error) {
-    console.error("Error fetching configurations:", error);
     fetchError.value = true; // Set error state
     return null;
   }
