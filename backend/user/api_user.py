@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from sqlite3 import IntegrityError
 from typing import Annotated
+import uuid
 
 from fastapi.responses import JSONResponse, RedirectResponse
 import jwt
@@ -10,10 +11,19 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import smtplib
+from email.mime.text import MIMEText
 from authlib.integrations.starlette_client import OAuth
 
 from backend.utils import get_db
-from backend.schemas import Token, TokenData, UserToRegister, UserResponse
+from backend.schemas import (
+    ForgetPassword,
+    ResetPassword,
+    Token,
+    TokenData,
+    UserToRegister,
+    UserResponse,
+)
 from backend import models
 
 router = APIRouter()
@@ -189,6 +199,64 @@ async def logout(token: str = Depends(oauth2_scheme), db: Session = Depends(get_
 
     return {"detail": "Successfully logged out"}
 
+
+def create_password_reset_token(db: Session, user_id: str):
+    token = str(uuid.uuid4())
+    expires_at = datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+
+    reset_token = models.PasswordResetToken(
+        user_id=user_id, token=token, expires_at=expires_at
+    )
+    db.add(reset_token)
+    db.commit()
+
+    return token
+
+
+def send_password_reset_email(email: str, token: str):
+    reset_url = f"{os.getenv('FRONTEND_URL')}/reset-password?token={token}"
+    msg = MIMEText(f"Click the following link to reset your password: {reset_url}")
+
+    msg["Subject"] = "Reset Your Password"
+    msg["From"] = f"no-reply@{os.getenv('FRONTEND_URL')}"
+    msg["To"] = email
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login("trisight.game@gmail.com", os.getenv("EMAIL_PASSWORD"))
+        server.send_message(msg)
+
+
+@router.post("/forgot-password")
+def forgot_password(data: ForgetPassword, db: Session = Depends(get_db)):
+    user = get_user(db, data.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    token = create_password_reset_token(db, user.id)
+    send_password_reset_email(data.email, token)
+
+    return {"msg": "Password reset email sent"}
+
+
+@router.post("/reset-password")
+def reset_password(data: ResetPassword, db: Session = Depends(get_db)):
+    reset_token = (
+        db.query(models.PasswordResetToken)
+        .filter(models.PasswordResetToken.token == data.token)
+        .first()
+    )
+
+    if not reset_token or reset_token.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    user = db.query(models.User).filter(models.User.id == reset_token.user_id).first()
+    user.hashed_password = get_password_hash(data.new_password)
+
+    db.delete(reset_token)
+    db.commit()
+
+    return {"msg": "Password has been reset"}
 
 oauth = OAuth()
 

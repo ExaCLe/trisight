@@ -47,9 +47,24 @@
                 @close="other_error = null"
                 class="mt-4"
             />
-
-            <!-- Login and Register Buttons -->
-            <UButton type="submit" class="bg-blue-dianne-900">Login</UButton>
+            <!-- Buttons and Forgot Password Link -->
+            <div class="flex items-center space-x-4 mt-4">
+                <UButton type="submit" class="bg-blue-dianne-900">Login</UButton>
+                <UButton
+                    type="button"
+                    @click="navigateTo('/register')"
+                    class="border-blue-dianne-900 text-color-blue-dianne-900"
+                    variant="outline"
+                >
+                    Register
+                </UButton>
+                <span
+                    class="text-blue-dianne-900 cursor-pointer underline"
+                    @click="navigateTo('/forgot-password')"
+                >
+                    Forgot Password?
+                </span>
+            </div>
             <UButton type="button" @click="navigateTo('/register')" class="ml-4 border-blue-dianne-900 text-color-blue-dianne-900" variant="outline">Register</UButton>
         </UForm>
 
