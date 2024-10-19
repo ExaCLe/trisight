@@ -187,9 +187,16 @@ const getTestConfigId = () => {
 // Funktion zum Abrufen der Daten basierend auf dem Schwierigkeitsgrad
 const fetchData = async () => {
   try {
-    const testConfigId = getTestConfigId(); // Get test_config_id
-    const endpoint = `${config.public.backendUrl}/api/test_configs/${testConfigId}`;
-    const response = await $fetch(endpoint);
+    let response = null;
+    if (isTrisightMode.value) {
+      const endpoint = `${config.public.backendUrl}/api/difficulty/${difficulty.value}`;
+      response = await $fetch(endpoint);
+      response = { item_configs: response };
+    } else {
+      const testConfigId = getTestConfigId(); // Get test_config_id
+      const endpoint = `${config.public.backendUrl}/api/test_configs/${testConfigId}`;
+      response = await $fetch(endpoint);
+    }
     fetchError.value = false; // No error
     return response;
   } catch (error) {

@@ -42,4 +42,5 @@ def test_get_difficulty_endpoint_invalid(difficulty):
 
 def test_get_difficulty_endpoint_missing():
     response = client.get("/api/difficulty/")
+    print(response.json())
     assert response.status_code == 404, "Missing difficulty level should return 404"
