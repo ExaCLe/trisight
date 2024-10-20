@@ -100,6 +100,10 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 
+definePageMeta({
+  middleware: 'auth', // Reference your middleware file
+});
+
 const config = useRuntimeConfig();
 
 const toast = useToast(); 

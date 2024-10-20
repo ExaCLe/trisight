@@ -48,28 +48,28 @@ def generate_item_config(difficulty: str) -> schemas.ItemConfig:
     """Generate an ItemConfig with parameters based on the difficulty level."""
     difficulty_ranges = {
         "easy": {
-            "contrast_min": 1.3,
-            "contrast_max": 1.6,
+            "contrast_min": 1.08,
+            "contrast_max": 1.11,
             "triangle_size_min": 50,
             "triangle_size_max": 100,
-            "time_visible_min": 1000,
-            "time_visible_max": 2000,
+            "time_visible_min": 300,
+            "time_visible_max": 500,
         },
         "medium": {
-            "contrast_min": 1.07,
-            "contrast_max": 1.3,
+            "contrast_min": 1.05,
+            "contrast_max": 1.07,
             "triangle_size_min": 30,
             "triangle_size_max": 70,
-            "time_visible_min": 500,
-            "time_visible_max": 1000,
+            "time_visible_min": 150,
+            "time_visible_max": 300,
         },
         "hard": {
             "contrast_min": 1.03,
-            "contrast_max": 1.06,
-            "triangle_size_min": 10,
-            "triangle_size_max": 20,
-            "time_visible_min": 250,
-            "time_visible_max": 500,
+            "contrast_max": 1.05,
+            "triangle_size_min": 8,
+            "triangle_size_max": 15,
+            "time_visible_min": 50,
+            "time_visible_max": 100,
         },
     }
     if difficulty not in difficulty_ranges:
