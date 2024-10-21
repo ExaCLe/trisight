@@ -1,8 +1,18 @@
 import pytest
 from fastapi.testclient import TestClient
+from backend.difficulty.crud_difficulty import fill_item_configs
 from backend.main import app
+from backend.config import settings
+from backend.database import SessionLocal
+from backend.seed import seed_data
+
+settings.testing = True
 
 client = TestClient(app)
+
+db = SessionLocal()
+seed_data()
+fill_item_configs(db, 10)
 
 
 @pytest.mark.parametrize("difficulty", ["easy", "medium", "hard"])
@@ -42,5 +52,4 @@ def test_get_difficulty_endpoint_invalid(difficulty):
 
 def test_get_difficulty_endpoint_missing():
     response = client.get("/api/difficulty/")
-    print(response.json())
     assert response.status_code == 404, "Missing difficulty level should return 404"
