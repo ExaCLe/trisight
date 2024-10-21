@@ -3,3 +3,4 @@
 .DS_Store
 __pycache__/
 .env
+developing_difficulty_presets/*/
