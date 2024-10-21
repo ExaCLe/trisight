@@ -37,7 +37,7 @@ def upgrade() -> None:
 
     # Step 2: Copy data from the old table to the new table
     op.execute(
-        "INSERT INTO user_new (id, created, username, email, hashed_password, issued_at) SELECT user.id, user.created, user.username, user.email, user.hashed_password, user.issued_at FROM user"
+        'INSERT INTO user_new (id, created, username, email, hashed_password, issued_at) SELECT "user".id, "user".created, "user".username, "user".email, "user".hashed_password, "user".issued_at FROM "user";'
     )
 
     # Step 3: Drop the old table
