@@ -10,10 +10,6 @@ settings.testing = True
 
 client = TestClient(app)
 
-db = SessionLocal()
-seed_data()
-fill_item_configs(db, 10)
-
 
 @pytest.mark.parametrize("difficulty", ["easy", "medium", "hard"])
 def test_get_difficulty_endpoint_valid(difficulty):

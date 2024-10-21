@@ -130,18 +130,31 @@ def get_item_config_count(db: Session, difficulty: str) -> int:
 
 
 def fill_item_configs(db: Session, target_count: int = 10_000):
-    """Ensure there are at least `count` item configs for each difficulty level in the database."""
+    """Ensure there are at least `target_count` item configs for each difficulty level in the database,
+    and make sure the required TestConfig entries are present."""
     difficulties = ["easy", "medium", "hard"]
+    test_config_mapping = {"easy": 1, "medium": 3, "hard": 4}
+
     for difficulty in difficulties:
         current_count = get_item_config_count(db, difficulty)
-        test_config_id = get_test_config_id_by_difficulty(difficulty)
+
+        # Ensure TestConfig is present in the database
+        test_config_id = test_config_mapping[difficulty]
         test_config = (
             db.query(models.TestConfig)
             .filter(models.TestConfig.id == test_config_id)
             .first()
         )
+
+        # If the TestConfig entry is missing, create it
         if not test_config:
-            raise Exception(f"TestConfig with id {test_config_id} not found")
+            test_config = models.TestConfig(
+                id=test_config_id, name=f"{difficulty.capitalize()} TestConfig"
+            )
+            db.add(test_config)
+            db.commit()
+
+        # If current count is less than the target, add new ItemConfigs
         if current_count < target_count:
             items_to_create = target_count - current_count
             for _ in range(items_to_create):
@@ -157,7 +170,15 @@ def fill_item_configs(db: Session, target_count: int = 10_000):
 def get_item_configs_by_difficulty(
     db: Session, difficulty: str, limit: int = 10
 ) -> List[models.ItemConfig]:
-    """Retrieve a list of random ItemConfigs for a given difficulty level."""
+    """Retrieve a list of random ItemConfigs for a given difficulty level, generating more if needed."""
+    # Get the current count of item configs for the given difficulty
+    current_count = get_item_config_count(db, difficulty)
+
+    # If there are not enough item configs, fill them up to ensure we have at least the requested limit
+    if current_count < limit:
+        fill_item_configs(db, target_count=limit)
+
+    # Retrieve item configs after ensuring we have enough
     test_config_id = get_test_config_id_by_difficulty(difficulty)
     item_configs = (
         db.query(models.ItemConfig)
