@@ -58,7 +58,7 @@
 
       <!-- Aktueller Spielzustand (Triangle und Circle) anzeigen, wenn das Spiel gestartet ist -->
       <div
-        v-else
+        v-else-if="isTriangleVisible"
         class="circle-background"
         :style="{
           backgroundColor: currentItem.circle_color,
@@ -100,6 +100,10 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 
+definePageMeta({
+  middleware: 'auth', // Reference your middleware file
+});
+
 const config = useRuntimeConfig();
 
 const toast = useToast(); 
@@ -122,6 +126,7 @@ const remainingGameTime = ref(60); // Verbleibende Zeit für das Spiel in Sekund
 const randomizedItems = ref([]);
 const fetchError = ref(false);
 const itemConfigResultIds = ref([]); // To store the IDs of item_config_results
+const isTriangleVisible = ref(false); // Zustand für die Sichtbarkeit des Dreiecks
 
 // Begrenzte Größen für das Dreieck und den Kreis
 const limitedTriangleSize = computed(() =>
@@ -183,13 +188,19 @@ const getTestConfigId = () => {
   }
 };
 
-
 // Funktion zum Abrufen der Daten basierend auf dem Schwierigkeitsgrad
 const fetchData = async () => {
   try {
-    const testConfigId = getTestConfigId(); // Get test_config_id
-    const endpoint = `${config.public.backendUrl}/api/test_configs/${testConfigId}`;
-    const response = await $fetch(endpoint);
+    let response = null;
+    if (isTrisightMode.value) {
+      const endpoint = `${config.public.backendUrl}/api/difficulty/${difficulty.value}`;
+      response = await $fetch(endpoint);
+      response = { item_configs: response };
+    } else {
+      const testConfigId = getTestConfigId(); // Get test_config_id
+      const endpoint = `${config.public.backendUrl}/api/test_configs/${testConfigId}`;
+      response = await $fetch(endpoint);
+    }
     fetchError.value = false; // No error
     return response;
   } catch (error) {
@@ -213,7 +224,7 @@ const initializeGame = () => {
 
 const startGame = () => {
   isGameStarted.value = true;
-  isPlaceholderVisible.value = false; // Platzhalter ausblenden, wenn das Spiel beginnt
+  isTriangleVisible.value = true; // Dreieck sichtbar machen
   if (isTrisightMode.value) {
     startTimer();
     startGameTimer(); // Starte den universellen Game Timer
@@ -227,7 +238,7 @@ const startTimer = () => {
       remainingTime.value -= 10; // Aktualisierungsrate auf 10 ms gesetzt
     } else {
       clearInterval(timer.value);
-      checkAnswer();
+      isTriangleVisible.value = false; // Dreieck nach Ablauf der Zeit ausblenden
     }
   }, 10); // Timer-Intervall auf 10 ms gesetzt
 };
@@ -308,13 +319,13 @@ const submitTestConfigResult = async () => {
   }
 };
 
-
 const loadNextItem = () => {
   if (currentIndex.value < randomizedItems.value.length - 1) {
     currentIndex.value++;
     currentItem.value = randomizedItems.value[currentIndex.value];
     totalTime.value = currentItem.value.time_visible_ms;
     remainingTime.value = totalTime.value;
+    isTriangleVisible.value = true; // Dreieck wieder sichtbar machen
     if (isTrisightMode.value) {
       startTimer(); // Timer nur im Trisight Mode fortsetzen
     }
@@ -346,7 +357,7 @@ const startNewRound = () => {
   remainingGameTime.value = 60;
   isGameOver.value = false;
   isGameStarted.value = false;
-  isPlaceholderVisible.value = true; // Platzhalter wieder anzeigen
+  isTriangleVisible.value = false; // Dreieck ausblenden
   initializeGame();
 
   if (typeof window !== "undefined") {
