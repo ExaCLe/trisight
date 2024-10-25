@@ -2,7 +2,6 @@
   <div class="configurator">
     <h1>Konfigurieren Sie Ihren Sehtest</h1>
 
-
     <div v-if="loadedTestId" class="loaded-test-name">
       <h2>
         Konfiguration:
@@ -14,8 +13,9 @@
     </div>
 
     <p class="select-info">
-      Bitte wählen Sie die Kacheln aus, die Sie in Ihrer Konfiguration speichern
-      möchten.
+      Hier finden Sie einige Beispiele, wie Ihre Kacheln aussehen können. Bitte
+      wählen Sie die Kacheln aus, die Sie in Ihrer Konfiguration speichern
+      möchten, oder erstellen Sie sich Ihre eigenen Kacheln.
     </p>
 
     <UAlert
@@ -105,7 +105,7 @@
         @click="handleSaveTestConfig"
         variant="solid"
       >
-        {{ loadedTestId ? "Sehtest aktualisieren" : "Sehtest speichern"  }} ({{
+        {{ loadedTestId ? "Sehtest aktualisieren" : "Sehtest speichern" }} ({{
           selectedItems.length
         }})
       </UButton>
@@ -240,17 +240,20 @@
     </div>
   </UModal>
   <UModal v-model="isNameModalOpen">
-  <div class="modal-content">
-    <h2 class="modal-title">Konfigurationsnamen eingeben</h2>
-    <div class="modal-body">
-      <UInput v-model="configName" placeholder="Namen der Konfiguration eingeben" />
+    <div class="modal-content">
+      <h2 class="modal-title">Konfigurationsnamen eingeben</h2>
+      <div class="modal-body">
+        <UInput
+          v-model="configName"
+          placeholder="Namen der Konfiguration eingeben"
+        />
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="saveNewTestConfig">Speichern</button>
+        <button class="btn" @click="isNameModalOpen = false">Abbrechen</button>
+      </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn" @click="saveNewTestConfig">Speichern</button>
-      <button class="btn" @click="isNameModalOpen = false">Abbrechen</button>
-    </div>
-  </div>
-</UModal>
+  </UModal>
 
   <UModal v-model="isSelectionWarningOpen">
     <div class="modal-content">
@@ -272,7 +275,9 @@
 import { ref, onMounted } from "vue";
 import { watch } from "vue";
 
-const testItemsEndpoint = "http://localhost:8000/api/test_configs/1";
+const testItemsEndpointEasy = "http://localhost:8000/api/test_configs/1";
+const testItemsEndpointMedium = "http://localhost:8000/api/test_configs/3";
+const testItemsEndpointHard = "http://localhost:8000/api/test_configs/4";
 const saveTestEndpoint = "http://localhost:8000/api/test_configs";
 const loadTestEndpoint = "http://localhost:8000/api/test_configs/";
 
@@ -291,6 +296,7 @@ const isLoadModalOpen = ref(false);
 const isSelectionWarningOpen = ref(false);
 const isNameModalOpen = ref(false);
 
+
 // item confing
 const circleColor = ref("#ffcc00");
 const triangleColor = ref("#3333ff");
@@ -298,10 +304,27 @@ const circleSize = ref(150);
 const triangleSize = ref(50);
 const modalOrientation = ref("N");
 
+const fetchRandomItems = async (endpoint) => {
+  try {
+    const response = await $fetch(endpoint);
+    const items = response?.item_configs || [];
+    return items.sort(() => 0.5 - Math.random()).slice(0, 5);
+  } catch (error) {
+    console.error(`Fehler beim Abrufen von Items von ${endpoint}:`, error);
+    fetchError.value = true;
+    return [];
+  }
+};
+
 const fetchTestItems = async () => {
   try {
-    const response = await $fetch(testItemsEndpoint);
-    testItems.value = response?.item_configs || [];
+    const [easyItems, mediumItems, hardItems] = await Promise.all([
+      fetchRandomItems(testItemsEndpointEasy),
+      fetchRandomItems(testItemsEndpointMedium),
+      fetchRandomItems(testItemsEndpointHard),
+    ]);
+
+    testItems.value = [...easyItems, ...mediumItems, ...hardItems];
     fetchError.value = false;
   } catch (error) {
     console.error("Fehler beim Abrufen der Testkonfigurationen:", error);
@@ -319,7 +342,9 @@ const showWarning = (message) => {
 
 const handleSaveTestConfig = () => {
   if (selectedItems.value.length === 0) {
-    showWarning("Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern.");
+    showWarning(
+      "Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
+    );
     return;
   }
 
@@ -355,7 +380,6 @@ const saveNewTestConfig = async () => {
       id: "save-success",
       color: "green",
     });
-
   } catch (error) {
     console.error("Fehler beim Speichern des Sehtests:", error);
     toast.add({
@@ -365,7 +389,6 @@ const saveNewTestConfig = async () => {
     });
   }
 };
-
 
 watch(triangleSize, (newValue) => {
   if (newValue > 120) triangleSize.value = 120;
@@ -390,7 +413,6 @@ const toggleSelection = (id) => {
   }
 };
 
-
 const loadTest = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -414,7 +436,6 @@ const loadTest = async () => {
         id: "load-success",
         color: "green",
       });
-
     } else {
       throw new Error("Ungültige Antwortstruktur.");
     }
@@ -543,7 +564,6 @@ const updateTestConfig = async () => {
   }
 };
 
-
 const adjustTriangleSize = (change) => {
   const newSize = triangleSize.value + change;
   if (newSize > 10 && newSize < circleSize.value) triangleSize.value = newSize;
@@ -589,28 +609,29 @@ h1 {
 }
 
 .test-tile.selected {
-  background-color: #f7f7f7; 
+  background-color: #f7f7f7;
   box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.3),
-              0 8px 16px -8px rgba(0, 0, 0, 0.15); 
-  transform: translateY(-3px) scale(1.03); 
-  transition: transform 0.25s ease, box-shadow 0.3s ease-in-out, background-color 0.3s ease;
-  border: none; 
+    0 8px 16px -8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px) scale(1.03);
+  transition: transform 0.25s ease, box-shadow 0.3s ease-in-out,
+    background-color 0.3s ease;
+  border: none;
   outline: none;
   position: relative;
 }
 
 .test-tile.selected:hover {
-  background-color: #eaeaea; 
+  background-color: #eaeaea;
 }
 
 .test-tile.selected::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 15px; 
+  border-radius: 15px;
   border: 1px solid #d9a8588a; /* Leichter Grauton für die Border */
   box-shadow: 0 0 15px #d9a858; /* Dezenterer Schimmer-Effekt */
   z-index: -1;
@@ -618,15 +639,14 @@ h1 {
 }
 
 .test-tile:focus {
-  outline: none; 
+  outline: none;
 }
 
 .test-tile:hover {
   box-shadow: 0 15px 25px -10px rgba(0, 0, 0, 0.35),
-              0 12px 20px -8px rgba(0, 0, 0, 0.25); /* Verfeinerter Hover-Schatten */
+    0 12px 20px -8px rgba(0, 0, 0, 0.25); /* Verfeinerter Hover-Schatten */
   transform: translateY(-6px) scale(1.04); /* Stärkerer Effekt beim Hover */
 }
-
 
 .add-item-tile {
   border: 2px dashed #ccc;
