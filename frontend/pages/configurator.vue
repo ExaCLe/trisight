@@ -122,6 +122,8 @@
     </div>
   </div>
 
+
+  <!-- MODAL FÜR NEUE ITEM CONFIGS -->
   <UModal v-model="isOpen">
     <div class="modal-content">
       <h2 class="modal-title">Sehtest Objekt konfigurieren</h2>
@@ -269,6 +271,115 @@
       </div>
     </div>
   </UModal>
+
+  <!-- MODAL FÜR BEREITS BESTEHENDE ITEM CONFIGS-->
+
+  <UModal v-model="isEditModalOpen">
+  <div class="modal-content">
+    <h2 class="modal-title">Item Konfiguration bearbeiten</h2>
+    <div class="modal-body">
+      <!-- Vorschau des Dreiecks auf dem Kreis -->
+      <div class="preview-container">
+        <div class="preview-box">
+          <div
+            class="circle"
+            :style="{
+              backgroundColor: circleColor,
+              width: circleSize + 'px',
+              height: circleSize + 'px',
+            }"
+            @click="selectColor('circle')"
+          >
+            <div class="triangle-circle">
+              <div
+                class="triangle"
+                :style="{
+                  width: triangleSize + 'px',
+                  height: triangleSize + 'px',
+                  backgroundColor: triangleColor,
+                  transform: getRotationStyle(modalOrientation).rotation,
+                }"
+                @click="selectColor('triangle')"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Steuerungsbereich -->
+      <div class="controls">
+        <div class="size-controls">
+          <span>Dreieck:</span>
+          <input
+            class="size-input"
+            type="number"
+            v-model="triangleSize"
+            min="10"
+            max="120"
+          />
+          <div>
+            <button class="size-btn" @click="adjustTriangleSize(5)">
+              <UIcon name="heroicons:plus-20-solid" />
+            </button>
+            <button class="size-btn" @click="adjustTriangleSize(-5)">
+              <UIcon name="heroicons:minus-20-solid" />
+            </button>
+          </div>
+
+          <span>Kreis:</span>
+          <input
+            class="size-input"
+            type="number"
+            v-model="circleSize"
+            min="50"
+            max="200"
+          />
+          <div>
+            <button class="size-btn" @click="adjustCircleSize(5)">
+              <UIcon name="heroicons:plus-20-solid" />
+            </button>
+            <button class="size-btn" @click="adjustCircleSize(-5)">
+              <UIcon name="heroicons:minus-20-solid" />
+            </button>
+          </div>
+        </div>
+
+        <div class="color-controls">
+          <div>
+            Kreisfarbe:
+            <input class="color-input" type="color" v-model="circleColor" />
+          </div>
+          <div>
+            Dreieckfarbe:
+            <input class="color-input" type="color" v-model="triangleColor" />
+          </div>
+        </div>
+
+        <div class="direction-controls">
+          <button class="direction-btn" @click="setModalOrientation('N')">
+            Oben
+          </button>
+          <button class="direction-btn" @click="setModalOrientation('E')">
+            Rechts
+          </button>
+          <button class="direction-btn" @click="setModalOrientation('S')">
+            Unten
+          </button>
+          <button class="direction-btn" @click="setModalOrientation('W')">
+            Links
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aktualisieren und Schließen Buttons -->
+    <div class="modal-footer">
+      <button class="btn" @click="updateItemConfig(editingIndex)">Aktualisieren</button>
+      <button class="btn" @click="isEditModalOpen = false">Abbrechen</button>
+    </div>
+  </div>
+</UModal>
+
 </template>
 
 <script setup>
@@ -292,10 +403,12 @@ const toastMessage = ref("");
 
 // modale
 const isOpen = ref(false);
+const isEditModalOpen = ref(false);
 const isLoadModalOpen = ref(false);
 const isSelectionWarningOpen = ref(false);
 const isNameModalOpen = ref(false);
 
+const editingIndex = ref(null);
 
 // item confing
 const circleColor = ref("#ffcc00");
@@ -303,6 +416,28 @@ const triangleColor = ref("#3333ff");
 const circleSize = ref(150);
 const triangleSize = ref(50);
 const modalOrientation = ref("N");
+
+const generateRandomConfigs = () => {
+  const colors = ["#ffcc00", "#3333ff", "#ff5733", "#33ff57", "#3357ff"];
+  const orientations = ["N", "E", "S", "W"];
+
+  const randomConfig = () => ({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    triangle_size: Math.floor(Math.random() * 111) + 10,
+    triangle_color: colors[Math.floor(Math.random() * colors.length)],
+    circle_size: Math.floor(Math.random() * 151) + 50,
+    circle_color: colors[Math.floor(Math.random() * colors.length)],
+    orientation: orientations[Math.floor(Math.random() * orientations.length)],
+    time_visible_ms: 5000,
+    createdByUser: true,
+    isUnsaved: true, // Markiert das Item als ungespeichert
+  });
+
+  testItems.value = Array.from({ length: 15 }, randomConfig);
+};
+
+
+
 
 const fetchRandomItems = async (endpoint) => {
   try {
@@ -340,24 +475,71 @@ const showWarning = (message) => {
   }, 3000); // Toast verschwindet nach 3 Sekunden
 };
 
-const handleSaveTestConfig = () => {
+const saveUnsavedItems = async () => {
+  const token = localStorage.getItem("token");
+
+  for (let i = 0; i < selectedItems.value.length; i++) {
+    const itemId = selectedItems.value[i];
+    const item = testItems.value.find((config) => config.id === itemId);
+
+    // Prüfen, ob das Item ungespeichert ist
+    if (item && item.isUnsaved) {
+      console.log(`Speichern von ungespeichertem Item ${itemId} in der Datenbank...`);
+
+      try {
+        const response = await $fetch("http://localhost:8000/api/item_configs", {
+          method: "POST",
+          body: {
+            triangle_size: item.triangle_size,
+            triangle_color: item.triangle_color,
+            circle_size: item.circle_size,
+            circle_color: item.circle_color,
+            orientation: item.orientation,
+            time_visible_ms: 5000,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log(`Item ${itemId} erfolgreich gespeichert, neue ID: ${response.id}`);
+
+        // Aktualisiere die ID und markiere das Item als gespeichert
+        item.id = response.id;
+        item.isUnsaved = false;
+        selectedItems.value[i] = response.id;
+      } catch (error) {
+        console.error("Fehler beim Speichern eines ungespeicherten Items:", error);
+      }
+    } else {
+      console.log(`Item ${itemId} wurde bereits in der Datenbank gespeichert.`);
+    }
+  }
+};
+
+
+
+
+const handleSaveTestConfig = async () => {
   if (selectedItems.value.length === 0) {
-    showWarning(
-      "Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
-    );
+    showWarning("Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern.");
     return;
   }
 
-  // If it's a new test, open the naming modal
+  // Speichern der unsaved items vor dem Sehtest speichern
+  await saveUnsavedItems();
+
+  // Weiter mit dem Speichern des Sehtests
   if (!loadedTestId.value) {
     isNameModalOpen.value = true;
   } else {
-    // If updating an existing test, save directly
     updateTestConfig();
   }
 };
 
 const saveNewTestConfig = async () => {
+  await saveUnsavedItems(); // Erst alle unsaved Items speichern
+
   try {
     const token = localStorage.getItem("token");
     const response = await $fetch(saveTestEndpoint, {
@@ -389,6 +571,7 @@ const saveNewTestConfig = async () => {
     });
   }
 };
+
 
 watch(triangleSize, (newValue) => {
   if (newValue > 120) triangleSize.value = 120;
@@ -450,18 +633,72 @@ const loadTest = async () => {
   }
 };
 
+const updateItemConfig = async () => {
+  if (editingIndex.value === null) return;
+
+  const updatedItem = {
+    triangle_size: triangleSize.value,
+    triangle_color: triangleColor.value,
+    circle_size: circleSize.value,
+    circle_color: circleColor.value,
+    orientation: modalOrientation.value,
+    time_visible_ms: 5000,
+  };
+
+  try {
+    const token = localStorage.getItem("token");
+    const item = testItems.value[editingIndex.value];
+
+    // Prüfen, ob das Item bereits gespeichert ist oder neu erstellt werden muss
+    if (!item.id || item.createdByUser) {
+      // Wenn es keine ID gibt oder das `createdByUser`-Flag gesetzt ist, dann POST-Request zum Speichern
+      const response = await $fetch("http://localhost:8000/api/item_configs", {
+        method: "POST",
+        body: updatedItem,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Nach dem Speichern: Die ID der Config aktualisieren und das Flag `createdByUser` auf `false` setzen
+      testItems.value[editingIndex.value] = { ...updatedItem, id: response.id, createdByUser: false };
+    } else {
+      // Wenn das Item bereits existiert, dann PUT-Request zum Aktualisieren
+      await $fetch(`http://localhost:8000/api/item_configs/${item.id}`, {
+        method: "PUT",
+        body: updatedItem,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Aktualisiere die lokale Config in `testItems`
+      testItems.value[editingIndex.value] = { ...updatedItem, id: item.id };
+    }
+
+    isEditModalOpen.value = false;
+    editingIndex.value = null;
+  } catch (error) {
+    console.error("Fehler beim Aktualisieren des Items:", error);
+  }
+};
+
+
+
+
+
 const editItem = (index) => {
   const item = testItems.value[index];
-  // Setze die Eigenschaften des zu bearbeitenden Items in die Modal-Werte
   circleColor.value = item.circle_color;
   triangleColor.value = item.triangle_color;
   circleSize.value = item.circle_size;
   triangleSize.value = item.triangle_size;
   modalOrientation.value = item.orientation;
 
-  isOpen.value = true;
-  editingIndex.value = index;
+  isEditModalOpen.value = true; // Editier-Modal öffnen
+  editingIndex.value = index; // Index des zu bearbeitenden Items setzen
 };
+
 
 const duplicateItem = (index) => {
   const item = testItems.value[index];
@@ -500,7 +737,7 @@ const saveItemConfig = async () => {
     triangle_color: triangleColor.value,
     circle_size: circleSize.value,
     circle_color: circleColor.value,
-    time_visible_ms: 5000, // Beispielwert für Sichtbarkeitsdauer, kann angepasst werden
+    time_visible_ms: 5000, 
     orientation: modalOrientation.value,
   };
 
@@ -512,6 +749,10 @@ const saveItemConfig = async () => {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    });
+
+    console.log("Authorization-Header:", {
+      Authorization: `Bearer ${token}`,
     });
 
     // Füge das zurückgegebene Item zu `testItems` hinzu, wenn die Speicherung erfolgreich war
@@ -569,7 +810,10 @@ const adjustTriangleSize = (change) => {
   if (newSize > 10 && newSize < circleSize.value) triangleSize.value = newSize;
 };
 
-onMounted(fetchTestItems);
+onMounted(() => {
+  generateRandomConfigs();
+});
+
 </script>
 
 <style scoped>
@@ -632,8 +876,8 @@ h1 {
   right: 0;
   bottom: 0;
   border-radius: 15px;
-  border: 1px solid #d9a8588a; /* Leichter Grauton für die Border */
-  box-shadow: 0 0 15px #d9a858; /* Dezenterer Schimmer-Effekt */
+  border: 1px solid #ffffff8a; /* Leichter Grauton für die Border */
+  box-shadow: 0 0 15px #ffa413; /* Dezenterer Schimmer-Effekt */
   z-index: -1;
   transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease;
 }
