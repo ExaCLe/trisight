@@ -184,7 +184,7 @@ const getTestConfigId = () => {
         return 1; // Easy mode
     }
   } else {
-    return 2; // Standard mode
+    return 1; // Standard mode
   }
 };
 
