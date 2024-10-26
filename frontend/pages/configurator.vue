@@ -6,6 +6,7 @@
       <h2>
         Konfiguration:
         <input v-model="loadedTestName" class="test-name-input" />
+        <span class="test-id">ID: {{ loadedTestId }}</span>
       </h2>
     </div>
     <div v-else class="loaded-test-name">
@@ -18,20 +19,57 @@
       möchten, oder erstellen Sie sich Ihre eigenen Kacheln.
     </p>
 
-    <UAlert
-      icon="i-heroicons-command-line"
-      color="red"
-      variant="subtle"
-      title="Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
-      :close-button="{
-        icon: 'i-heroicons-x-mark-20-solid',
-        color: 'white',
-        variant: 'link',
-        padded: false,
-      }"
-      v-if="showToast"
-      class="mb-4"
-    />
+    <transition name="fade-alert">
+      <UAlert
+        v-if="showSuccessAlert"
+        icon="i-heroicons-check-circle"
+        color="green"
+        variant="solid"
+        title="Sehtest erfolgreich gespeichert!"
+        class="mb-4"
+      />
+    </transition>
+
+    <transition name="fade-alert">
+      <UAlert
+        v-if="showLoadSuccessAlert"
+        icon="i-heroicons-check-circle"
+        color="green"
+        variant="solid"
+        title="Sehtest erfolgreich geladen!"
+        class="mb-4"
+      />
+    </transition>
+
+    <transition name="fade-alert">
+      <UAlert
+        v-if="showLoadErrorAlert"
+        icon="i-heroicons-exclamation-triangle"
+        color="red"
+        variant="solid"
+        title="Fehler beim Laden des Sehtests. Bitte versuchen Sie es erneut."
+        class="mb-4"
+    /></transition>
+
+    <transition name="fade-alert">
+      <UAlert
+        v-if="showSaveErrorAlert"
+        icon="i-heroicons-exclamation-triangle"
+        color="red"
+        variant="solid"
+        title="Fehler beim Speichern der Konfiguration."
+        class="mb-4"
+    /></transition>
+
+    <transition name="fade-alert">
+      <UAlert
+        v-if="showSelectionWarning"
+        icon="i-heroicons-command-line"
+        color="red"
+        variant="subtle"
+        title="Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
+        class="mb-4"
+    /></transition>
 
     <div class="error-alert" v-if="fetchError">
       Es gab ein Problem beim Abrufen der Testkonfigurationen. Bitte versuchen
@@ -398,8 +436,11 @@ const fetchError = ref(false);
 const inputTestId = ref("");
 const configName = ref("");
 const loadedTestName = ref("");
-const showToast = ref(false);
-const toastMessage = ref("");
+const showSuccessAlert = ref(false);
+const showLoadSuccessAlert = ref(false);
+const showLoadErrorAlert = ref(false);
+const showSaveErrorAlert = ref(false);
+const showSelectionWarning = ref(false);
 
 // modale
 const isOpen = ref(false);
@@ -448,8 +489,6 @@ const generateRandomConfigs = () => {
 
   testItems.value = Array.from({ length: 15 }, randomConfig);
 };
-
-
 
 const fetchRandomItems = async (endpoint) => {
   try {
@@ -541,16 +580,12 @@ const saveUnsavedItems = async () => {
 
 const handleSaveTestConfig = async () => {
   if (selectedItems.value.length === 0) {
-    showWarning(
-      "Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
-    );
+    showSelectionWarning.value = true;
+    setTimeout(() => (showSelectionWarning.value = false), 3000);
     return;
   }
 
-  // Speichern der unsaved items vor dem Sehtest speichern
   await saveUnsavedItems();
-
-  // Weiter mit dem Speichern des Sehtests
   if (!loadedTestId.value) {
     isNameModalOpen.value = true;
   } else {
@@ -559,7 +594,7 @@ const handleSaveTestConfig = async () => {
 };
 
 const saveNewTestConfig = async () => {
-  await saveUnsavedItems(); // Erst alle unsaved Items speichern
+  await saveUnsavedItems();
 
   try {
     const token = localStorage.getItem("token");
@@ -574,22 +609,15 @@ const saveNewTestConfig = async () => {
       },
     });
 
-    loadedTestId.value = response.id; // Speichert die neue Test-ID
+    loadedTestId.value = response.id;
     loadedTestName.value = configName.value;
     isNameModalOpen.value = false;
-
-    toast.add({
-      title: "Sehtest erfolgreich gespeichert!",
-      id: "save-success",
-      color: "green",
-    });
+    showSuccessAlert.value = true;
+    setTimeout(() => (showSuccessAlert.value = false), 3000);
   } catch (error) {
     console.error("Fehler beim Speichern des Sehtests:", error);
-    toast.add({
-      title: "Fehler beim Speichern der Konfiguration.",
-      id: "save-error",
-      color: "red",
-    });
+    showSaveErrorAlert.value = true;
+    setTimeout(() => (showSaveErrorAlert.value = false), 3000);
   }
 };
 
@@ -629,27 +657,19 @@ const loadTest = async () => {
     if (response && response.item_configs) {
       testItems.value = response.item_configs;
       selectedItems.value = response.item_configs.map((item) => item.id);
-
-      loadedTestId.value = response.id; // Speichere die Test-ID für spätere Updates
+      loadedTestId.value = response.id;
       loadedTestName.value = response.name;
       isLoadModalOpen.value = false;
 
-      toast.add({
-        title: "Sehtest erfolgreich geladen!",
-        id: "load-success",
-        color: "green",
-      });
+      showLoadSuccessAlert.value = true;
+      setTimeout(() => (showLoadSuccessAlert.value = false), 3000);
     } else {
       throw new Error("Ungültige Antwortstruktur.");
     }
   } catch (error) {
     console.error("Fehler beim Laden des Sehtests:", error);
-    toast.add({
-      title:
-        "Fehler beim Laden der Konfiguration. Bitte versuchen Sie es erneut.",
-      id: "load-error",
-      color: "red",
-    });
+    showLoadErrorAlert.value = true;
+    setTimeout(() => (showLoadErrorAlert.value = false), 3000);
   }
 };
 
@@ -702,12 +722,11 @@ const updateItemConfig = async () => {
 
     // Aktualisieren des bearbeiteten Items
     testItems.value[editingIndex.value] = { ...updatedItem, id: item.id };
-    
+
     // Reset des Temp-ID und Schließen des Modals
     tempId = null;
     isEditModalOpen.value = false;
     editingIndex.value = null;
-
   } catch (error) {
     console.error("Fehler beim Aktualisieren des Items:", error);
   }
@@ -725,7 +744,7 @@ const editItem = (index) => {
   modalOrientation.value = item.orientation;
 
   isEditModalOpen.value = true; // Öffnet das Edit-Modal
-  editingIndex.value = index;    // Speichert den Index des bearbeiteten Items
+  editingIndex.value = index; // Speichert den Index des bearbeiteten Items
 };
 
 const duplicateItem = (index) => {
@@ -810,7 +829,7 @@ const updateTestConfig = async () => {
     await $fetch(updateUrl, {
       method: "PUT",
       body: {
-        name: loadedTestName.value, // Allow direct name editing in input
+        name: loadedTestName.value, // Der bearbeitbare Name im Input-Feld
         item_config_ids: selectedItems.value,
       },
       headers: {
@@ -818,18 +837,15 @@ const updateTestConfig = async () => {
       },
     });
 
-    toast.add({
-      title: "Sehtest erfolgreich aktualisiert!",
-      id: "update-success",
-      color: "green",
-    });
+    // Zeige den Erfolg-Alert an
+    showSuccessAlert.value = true;
+
+    // Verstecke den Alert nach 3 Sekunden
+    setTimeout(() => {
+      showSuccessAlert.value = false;
+    }, 3000);
   } catch (error) {
     console.error("Fehler beim Aktualisieren der Konfiguration:", error);
-    toast.add({
-      title: "Fehler beim Aktualisieren der Konfiguration.",
-      id: "update-error",
-      color: "red",
-    });
   }
 };
 
@@ -1159,5 +1175,26 @@ h1 {
   position: absolute;
   color: red;
   top: 20%;
+}
+
+.test-id {
+  font-size: 1em;
+  color: #185262;
+  margin-left: 10px;
+}
+
+.fade-alert-enter-active,
+.fade-alert-leave-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.fade-alert-enter-from,
+.fade-alert-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.fade-alert-enter-to,
+.fade-alert-leave-from {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>
