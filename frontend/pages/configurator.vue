@@ -423,6 +423,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { watch } from "vue";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
 
 const testItemsEndpointEasy = "http://localhost:8000/api/test_configs/1";
 const testItemsEndpointMedium = "http://localhost:8000/api/test_configs/3";
@@ -673,6 +676,36 @@ const loadTest = async () => {
   }
 };
 
+const loadTestById = async (testId) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await $fetch(`${loadTestEndpoint}${testId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response && response.item_configs) {
+      testItems.value = response.item_configs;
+      selectedItems.value = response.item_configs.map((item) => item.id);
+      loadedTestId.value = response.id;
+      loadedTestName.value = response.name;
+      isLoadModalOpen.value = false;
+
+      showLoadSuccessAlert.value = true;
+      setTimeout(() => (showLoadSuccessAlert.value = false), 3000);
+    } else {
+      throw new Error("Ungültige Antwortstruktur.");
+    }
+  } catch (error) {
+    console.error("Fehler beim Laden des Sehtests:", error);
+    showLoadErrorAlert.value = true;
+    setTimeout(() => (showLoadErrorAlert.value = false), 3000);
+  }
+};
+
+
 const updateItemConfig = async () => {
   if (editingIndex.value === null) return;
 
@@ -855,8 +888,14 @@ const adjustTriangleSize = (change) => {
 };
 
 onMounted(() => {
-  generateRandomConfigs();
+  const { id } = route.query;
+  if (id) {
+    loadTestById(id); // Lädt den Test automatisch, wenn ein `id`-Query vorhanden ist
+  } else {
+    generateRandomConfigs(); // Fallback, falls keine ID übergeben wurde
+  }
 });
+
 </script>
 
 <style scoped>

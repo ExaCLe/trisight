@@ -2,6 +2,9 @@
   <UContainer class="container">
     <UButton @click="logout" class="logout-button bg-blue-dianne-900" size="xl">Logout</UButton>
 
+
+    <h2>Deine gespeicherten Sehtests:</h2>
+
     <!-- Sehtest Übersicht -->
     <div class="tile-grid">
       <div 
@@ -12,6 +15,7 @@
       >
         <div class="tile-content">
           <span>ID: {{ test.id }}</span>
+          <span class="name">{{ test.name }}</span> <!-- Zeigt den Namen des Sehtests an -->
         </div>
       </div>
     </div>
@@ -87,8 +91,13 @@ function openTestOptions(id) {
 
 async function editTest(id) {
   isOptionsModalOpen.value = false;
-  await navigateTo(`/configurator/${id}`);
+  await navigateTo({
+    path: "/configurator",
+    query: { id }, // Weiterleitung ohne den vorherigen Weg über inputTestId
+  });
 }
+
+
 
 async function runTest(id) {
   isOptionsModalOpen.value = false;
@@ -155,6 +164,8 @@ onMounted(() => {
 }
 
 .tile-content {
+  display: flex;
+  flex-direction: column;
   font-size: 18px;
   font-weight: bold;
   color: #185262;
@@ -183,5 +194,10 @@ onMounted(() => {
 
 .btn:hover {
   background-color: #133b4b;
+}
+
+.name {
+  color: rgb(133, 133, 133);
+  font-weight: 300;
 }
 </style>
