@@ -157,6 +157,15 @@
         Sehtest laden
         <UIcon name="heroicons:cloud-arrow-down-16-solid" class="w-5 h-5" />
       </UButton>
+      <UButton
+        v-if="loadedTestId"
+        class="btn delete-btn-scnd"
+        style="padding: 8px 20px; font-size: 16px"
+        @click="deleteTestConfig"
+        variant="solid"
+      >
+        Sehtest löschen
+      </UButton>
     </div>
   </div>
 
@@ -581,6 +590,33 @@ const saveUnsavedItems = async () => {
   }
 };
 
+const deleteTestConfig = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    await $fetch(`${loadTestEndpoint}${loadedTestId.value}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    // Nach dem Löschen den Zustand zurücksetzen
+    loadedTestId.value = null;
+    loadedTestName.value = "";
+    testItems.value = [];
+    selectedItems.value = [];
+
+    // Erfolgsmeldung anzeigen
+    showLoadSuccessAlert.value = true;
+    setTimeout(() => (showLoadSuccessAlert.value = false), 3000);
+  } catch (error) {
+    console.error("Fehler beim Löschen des Sehtests:", error);
+    showLoadErrorAlert.value = true;
+    setTimeout(() => (showLoadErrorAlert.value = false), 3000);
+  }
+};
+
+
 const handleSaveTestConfig = async () => {
   if (selectedItems.value.length === 0) {
     showSelectionWarning.value = true;
@@ -704,7 +740,6 @@ const loadTestById = async (testId) => {
     setTimeout(() => (showLoadErrorAlert.value = false), 3000);
   }
 };
-
 
 const updateItemConfig = async () => {
   if (editingIndex.value === null) return;
@@ -895,7 +930,6 @@ onMounted(() => {
     generateRandomConfigs(); // Fallback, falls keine ID übergeben wurde
   }
 });
-
 </script>
 
 <style scoped>
@@ -1236,4 +1270,14 @@ h1 {
   opacity: 1;
   transform: translateY(0);
 }
+
+.delete-btn-scnd {
+  background-color: #f44336; /* Rot für Löschen */
+  color: #fff;
+}
+
+.delete-btn-scnd:hover {
+  background-color: #d32f2f; /* Dunkleres Rot bei Hover */
+}
+
 </style>
