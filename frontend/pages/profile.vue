@@ -1,27 +1,33 @@
 <template>
-
-  
-  <UContainer class="container">
-    <div class="heading-2">
-      <h2>Deine gespeicherten Sehtests:</h2>
+  <UContainer class="profile-container">
+    <!-- User Info Kachel -->
+    <div class="user-info-tile">
+      <img src="../images/avatar.jpg" alt="User Image" class="user-image" />
+      <h2 class="user-name">{{ userName }}</h2>
+      <p class="user-email">{{ userEmail }}</p>
     </div>
 
-    <!-- Ladeanimation -->
-    <div v-if="isLoading" class="loader"></div>
+    <!-- Sehtest Liste Kachel -->
+    <div class="sehtest-list-tile">
+      <h2 class="list-title">Deine gespeicherten Sehtests</h2>
 
-    <!-- Sehtest Übersicht -->
-    <div v-else class="tile-grid">
-      <div
-        v-for="test in userTests"
-        :key="test.id"
-        class="test-tile"
-        @click="openTestOptions(test.id)"
-      >
-        <div class="tile-content">
-          <span>ID: {{ test.id }}</span>
-          <span class="name">{{ test.name }}</span>
-        </div>
+      <!-- Ladeanimation anzeigen, wenn geladen wird -->
+      <div v-if="isLoading" class="loader-container">
+        <div class="loader"></div>
       </div>
+
+      <!-- Sehtest Liste anzeigen, wenn das Laden abgeschlossen ist -->
+      <ul v-else class="sehtest-list">
+        <li
+          v-for="test in userTests"
+          :key="test.id"
+          @click="openTestOptions(test.id)"
+          class="sehtest-item"
+        >
+          <span class="test-id">ID: {{ test.id }}</span>
+          <span class="test-name">{{ test.name }}</span>
+        </li>
+      </ul>
     </div>
 
     <!-- Modal für Sehtest Optionen -->
@@ -37,7 +43,8 @@
       </div>
     </UModal>
 
-    <UButton @click="logout" class="logout-button bg-blue-dianne-900" size="xl">Logout</UButton>
+    <!-- Logout Button unter dem Grid -->
+    <UButton @click="logout" class="logout-button" size="xl">Logout</UButton>
   </UContainer>
 </template>
 
@@ -48,11 +55,13 @@ import { useRuntimeConfig, navigateTo } from "nuxt/app";
 const toast = useToast();
 const config = useRuntimeConfig();
 
+const userName = ref("Benutzername");
+const userEmail = ref("benutzer@example.com");
 const userTests = ref([]);
-const isLoading = ref(true); // Ladezustand hinzufügen
 const isOptionsModalOpen = ref(false);
 const selectedTestId = ref(null);
 const userId = ref(null);
+const isLoading = ref(true);
 
 async function fetchUserId() {
   try {
@@ -62,6 +71,8 @@ async function fetchUserId() {
       },
     });
     userId.value = response.id;
+    userName.value = response.username;
+    userEmail.value = response.email;
     fetchUserTests();
   } catch (error) {
     toast.add({
@@ -69,7 +80,7 @@ async function fetchUserId() {
       id: "fetch-user-id-failed",
       color: "red",
     });
-    isLoading.value = false; // Beenden des Ladens bei Fehler
+    isLoading.value = false;
   }
 }
 
@@ -88,7 +99,7 @@ async function fetchUserTests() {
       color: "red",
     });
   } finally {
-    isLoading.value = false; // Ladezustand beenden
+    isLoading.value = false;
   }
 }
 
@@ -132,56 +143,151 @@ async function logout() {
 onMounted(() => {
   fetchUserId();
 });
-
-
 </script>
 
 <style scoped>
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 60vh;
-  gap: 20px;
-}
-
-.heading-2 h2 {
-  margin: 20px;
-  font-size: 20px;
-}
-
-.tile-grid {
+.profile-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: 1fr 2fr;
   gap: 20px;
-  justify-content: center;
+  padding: 20px;
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.test-tile {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 150px;
-  height: 150px;
-  background-color: #f5f5f5;
+.user-info-tile {
+  background-color: #f9f9f9;
   border-radius: 15px;
-  cursor: pointer;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.test-tile:hover {
-  transform: scale(1.05);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
-}
-
-.tile-content {
+  padding: 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); /* Deutlicherer Schatten */
+  text-align: center;
   display: flex;
   flex-direction: column;
-  font-size: 18px;
+  align-items: center;
+}
+
+.user-image {
+  width: 200px; 
+  height: 200px;
+  border-radius: 50%;
+  margin-bottom: 15px;
+}
+
+.user-name {
+  font-size: 1.6em;
   font-weight: bold;
   color: #185262;
+}
+
+.user-email {
+  font-size: 1em;
+  color: #888;
+  margin-top: 5px;
+}
+
+.sehtest-list-tile {
+  background-color: #f9f9f9;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); /* Deutlicherer Schatten */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.loader {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #185262;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.list-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #185262;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.sehtest-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.sehtest-item {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.sehtest-item:hover {
+  background-color: #eaeaea;
+}
+
+.sehtest-item:last-child {
+  border-bottom: none;
+}
+
+.test-id {
+  font-weight: bold;
+  color: #185262;
+}
+
+.test-name {
+  color: #888;
+  font-weight: 400;
+}
+
+.sehtest-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sehtest-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.sehtest-list::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 10px;
+}
+
+.logout-button {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-top: 20px;
+  background-color: #185262;
+  color: #fff;
+}
+
+.logout-button:hover {
+  background-color: #133b4b;
 }
 
 .modal-content {
@@ -209,28 +315,4 @@ onMounted(() => {
   background-color: #133b4b;
 }
 
-.name {
-  color: rgb(133, 133, 133);
-  font-weight: 300;
-}
-
-/* Ladeanimation */
-.loader {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top: 4px solid #185262;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  margin-top: 20px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
 </style>
