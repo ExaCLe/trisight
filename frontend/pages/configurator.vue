@@ -165,6 +165,7 @@
         variant="solid"
       >
         Sehtest löschen
+        <UIcon name="i-heroicons-trash-16-solid" class="w-5 h-5" />
       </UButton>
     </div>
   </div>
@@ -1278,6 +1279,18 @@ h1 {
 
 .delete-btn-scnd:hover {
   background-color: #d32f2f; /* Dunkleres Rot bei Hover */
+}
+
+.configurator {
+  text-align: center;
+  padding: 20px;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.dark-configurator {
+  background-color: #333;
+  color: #eee;
 }
 
 </style>

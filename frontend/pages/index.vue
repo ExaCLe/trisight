@@ -1,7 +1,7 @@
 <template>
-  <div class="homepage">
+  <div v-if="!loading" :class="['homepage', { 'dark-homepage': themeStore.isDarkMode }]">
     <!-- Obere Sektion mit blauem Hintergrund -->
-    <div class="intro-section">
+    <div :class="['intro-section', { 'dark-intro-section': themeStore.isDarkMode }]">
       <div class="content-container">
         <div class="animation-area">
           <img
@@ -20,10 +20,7 @@
               Quick Start
             </NuxtLink>
             <NuxtLink
-              :to="{
-                path: '/vision-test-options',
-                query: { isTrisightMode: false },
-              }"
+              :to="{ path: '/vision-test-options', query: { isTrisightMode: false } }"
               class="test-button"
             >
               Vision Test
@@ -40,11 +37,10 @@
     </div>
 
     <!-- Untere Sektion mit weißem Hintergrund -->
-    <div class="info-section">
+    <div :class="['info-section', { 'dark-info-section': themeStore.isDarkMode }]">
       <div class="text-container">
         <h2>Wie funktioniert es?</h2>
-        <p>
-          Beim Sehtest und im Spiel "Trisight Mode" wird Ihre visuelle
+        <p>Beim Sehtest und im Spiel "Trisight Mode" wird Ihre visuelle
           Wahrnehmung auf die Probe gestellt. Ein Dreieck erscheint in der Mitte
           des Bildschirms und zeigt in eine von vier Richtungen:
           <b>Norden, Osten, Süden oder Westen</b>. Ihre Aufgabe ist es, so
@@ -56,18 +52,17 @@
           basierend auf der Schnelligkeit und Richtigkeit Ihrer Antworten. Beim
           klassischen Sehtest gibt es keinen Timer, sodass Sie sich in Ruhe auf
           die Aufgabe konzentrieren können. Testen Sie Ihre Fähigkeiten und
-          finden Sie heraus, wie schnell Ihre Augen wirklich sind!
-        </p>
+          finden Sie heraus, wie schnell Ihre Augen wirklich sind!</p>
       </div>
       <div class="image-container">
         <img src="../images/arrow-keys.png" />
       </div>
     </div>
-    <div class="info-section">
+
+    <div :class="['info-section', { 'dark-info-section': themeStore.isDarkMode }]">
       <div class="text-container">
         <h2>Ansteigende Schwierigkeit</h2>
-        <p>
-          Im Spiel "Trisight Mode" steigt die Schwierigkeit nach und nach an, um
+        <p>Im Spiel "Trisight Mode" steigt die Schwierigkeit nach und nach an, um
           Ihre visuelle Wahrnehmung und Reaktionszeit immer weiter zu fordern.
           Zu Beginn erscheint ein großes, deutlich sichtbares Dreieck auf einem
           kontrastreichen Hintergrund. Die Richtung – Norden, Osten, Süden oder
@@ -83,28 +78,28 @@
           ab. Jede Sekunde zählt, während die Herausforderung wächst – je
           schneller Sie die Richtung erkennen und die richtige Taste drücken,
           desto höher ist Ihre Punktzahl. Das Spiel fordert Ihre Augen und Ihre
-          Reaktionsfähigkeit auf höchstem Niveau!
-        </p>
+          Reaktionsfähigkeit auf höchstem Niveau!</p>
       </div>
       <div class="image-container">
         <div class="circle-background">
-          <img
-            class="triangle-image-2"
-            src="../images/blue-neon-triangle.png"
-            alt="Blue Neon Triangle"
-          />
+          <img class="triangle-image-2" src="../images/blue-neon-triangle.png" alt="Blue Neon Triangle" />
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {};
-  },
-};
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useThemeStore } from '@/stores/theme';
+
+const themeStore = useThemeStore();
+const loading = ref(true);
+
+onMounted(() => {
+  themeStore.initializeDarkMode();
+  loading.value = false;
+});
 </script>
 
 <style scoped>
@@ -113,7 +108,16 @@ export default {
   overflow: hidden;
 }
 
-/* Obere Sektion */
+/* Darkmode Styles für die gesamte Seite */
+.dark-homepage .intro-section {
+  background-color: #1a1a1a;
+  color: #d3d3d3;
+}
+.dark-homepage .info-section {
+  background-color: #2a2a2a;
+  color: #d3d3d3;
+}
+
 .intro-section {
   background-color: #185262;
   background-image: url(../images/trisight-background-home-desktop.png);
@@ -125,6 +129,16 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.dark-intro-section {
+  background-color: #111;
+  color: #d3d3d3;
+}
+
+.dark-info-section {
+  background-color: #222;
+  color: #ccc;
 }
 
 .content-container {
@@ -188,7 +202,7 @@ export default {
     transform: scale(0.3);
   }
   50% {
-    transform: scale(1);
+    transform: scale(0.7);
   }
 }
 
@@ -313,6 +327,7 @@ h1 {
 .info-section ul li {
   margin-bottom: 5px;
 }
+
 
 /* Responsive Styles */
 @media (max-width: 1200px) {

@@ -1,5 +1,5 @@
 <template>
-  <footer v-if="!loading" :class="['footer', { 'dark-footer': darkMode }]">
+  <footer v-if="!loading" :class="['footer', { 'dark-footer': themeStore.isDarkMode }]">
     <div class="divider"></div>
     <div class="footer-block">
       <h3>Programmierer</h3>
@@ -26,19 +26,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue';
+import { useThemeStore } from '@/stores/theme';
 
 // Darkmode und Ladezustand
-const darkMode = ref(false)
-const loading = ref(true)
+const themeStore = useThemeStore();
+const loading = ref(true);
 
 onMounted(() => {
   if (!import.meta.env.SSR) {
-    // Darkmode aus dem localStorage abrufen
-    darkMode.value = localStorage.getItem('darkMode') === 'true'
-    loading.value = false
+    themeStore.initializeDarkMode(); // Darkmode aus dem Store initialisieren
+    loading.value = false;
   }
-})
+});
 </script>
 
 <style scoped>
@@ -57,15 +57,6 @@ onMounted(() => {
 .dark-footer {
   background-color: #111;
   color: #d3d3d3;
-}
-
-.divider {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: #888888; 
 }
 
 .footer-block {

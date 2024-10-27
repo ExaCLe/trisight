@@ -8,5 +8,5 @@ export default defineNuxtConfig({
       backendUrl: process.env.BACKEND_URL || "http://localhost:8000",
     }
   },
-  modules: ["@nuxt/ui", '@nuxtjs/tailwindcss'], 
+  modules: ["@nuxt/ui", '@nuxtjs/tailwindcss', '@pinia/nuxt'], 
 })

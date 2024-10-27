@@ -1,5 +1,5 @@
 <template>
-  <header v-if="!loading" :class="{ 'dark-header': darkMode }">
+  <header v-if="!loading" :class="{ 'dark-header': themeStore.isDarkMode }">
     <a href="/">
       <img
         src="/images/TRISIGHT-LOGO-TRANSPARENT-NEU.png"
@@ -10,9 +10,9 @@
 
     <div class="header-buttons">
       <!-- Darkmode Schalter -->
-      <button @click="toggleDarkMode" class="darkmode-toggle">
-        <span v-if="darkMode">🌙</span>
-        <span v-else>☀️</span>
+      <button @click="themeStore.toggleDarkMode" class="darkmode-toggle">
+        <span v-if="themeStore.isDarkMode"><UIcon name="i-heroicons-moon-20-solid" class="w-12 h-10" /></span>
+        <span v-else><UIcon name="i-heroicons-sun" class="w-12 h-10" /></span>
       </button>
 
       <NuxtLink v-if="loggedIn" class="login-button" :to="{ path: './profile' }">Profile</NuxtLink>
@@ -22,25 +22,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue';
+import { useThemeStore } from '@/stores/theme'; // Importiere den Theme-Store
 
-const loggedIn = ref(false)
-const darkMode = ref(false)
-const loading = ref(true)
-
-function toggleDarkMode() {
-  darkMode.value = !darkMode.value
-  localStorage.setItem('darkMode', darkMode.value) // Darkmode-Status speichern
-}
+const themeStore = useThemeStore();
+const loggedIn = ref(false);
+const loading = ref(true);
 
 onMounted(() => {
   if (!import.meta.env.SSR) {
-    // Lade die Werte aus dem localStorage und setze die Zustände
-    darkMode.value = localStorage.getItem('darkMode') === 'true'
-    loggedIn.value = localStorage.getItem('token') !== null
-    loading.value = false // Ladezustand deaktivieren, wenn alle Werte geladen sind
+    themeStore.initializeDarkMode(); // Initialisiere Darkmode aus dem Store
+    loggedIn.value = localStorage.getItem('token') !== null;
+    loading.value = false;
   }
-})
+});
 </script>
 
 <style scoped>
@@ -74,6 +69,7 @@ header {
 
 /* Darkmode-Toggle-Button */
 .darkmode-toggle {
+  margin-top: 10px;
   background: none;
   border: none;
   font-size: 20px;
@@ -111,5 +107,9 @@ header {
 .dark-header .login-button:hover {
   background-color: #555;
   color: #ddd;
+}
+
+.dm-button {
+  
 }
 </style>
