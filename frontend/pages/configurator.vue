@@ -70,6 +70,17 @@
         title="Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
         class="mb-4"
     /></transition>
+   
+    <transition name="fade-alert">
+      <UAlert
+        v-if="showDeleteSuccessAlert"
+        icon="i-heroicons-check-circle"
+        color="red"
+        variant="solid"
+        title="Sehtest erfolgreich gelöscht!"
+        class="mb-4"
+      />
+    </transition>
 
     <div class="error-alert" v-if="fetchError">
       Es gab ein Problem beim Abrufen der Testkonfigurationen. Bitte versuchen
@@ -161,7 +172,7 @@
         v-if="loadedTestId"
         class="btn delete-btn-scnd"
         style="padding: 8px 20px; font-size: 16px"
-        @click="deleteTestConfig"
+        @click="confirmDeleteTest"
         variant="solid"
       >
         Sehtest löschen
@@ -428,12 +439,35 @@
       </div>
     </div>
   </UModal>
+
+  <!-- MODAL FÜR BESTÄTIGUNG LÖSCHEN -->
+  <UModal v-model="isDeleteConfirmModalOpen">
+    <div class="modal-content">
+      <h2 class="modal-title">Sehtest wirklich löschen?</h2>
+      <div class="modal-body">
+        <p>
+          Sind Sie sicher, dass Sie den Sehtest dauerhaft löschen möchten? Diese
+          Aktion kann nicht rückgängig gemacht werden.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn delete-btn-scnd" @click="deleteTestConfig">Ja, löschen</button>
+        <button class="btn" @click="isDeleteConfirmModalOpen = false">
+          Abbrechen
+        </button>
+      </div>
+    </div>
+  </UModal>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
 import { watch } from "vue";
 import { useRoute } from "vue-router";
+
+definePageMeta({
+  middleware: 'auth',
+});
 
 const route = useRoute();
 
@@ -454,6 +488,7 @@ const showLoadSuccessAlert = ref(false);
 const showLoadErrorAlert = ref(false);
 const showSaveErrorAlert = ref(false);
 const showSelectionWarning = ref(false);
+const showDeleteSuccessAlert = ref(false);
 
 // modale
 const isOpen = ref(false);
@@ -461,6 +496,7 @@ const isEditModalOpen = ref(false);
 const isLoadModalOpen = ref(false);
 const isSelectionWarningOpen = ref(false);
 const isNameModalOpen = ref(false);
+const isDeleteConfirmModalOpen = ref(false);
 
 const editingIndex = ref(null);
 
@@ -472,6 +508,10 @@ const triangleSize = ref(50);
 const modalOrientation = ref("N");
 
 let tempId = null;
+
+const confirmDeleteTest = () => {
+  isDeleteConfirmModalOpen.value = true;
+};
 
 const generateRandomConfigs = () => {
   const colors = ["#ffcc00", "#3333ff", "#ff5733", "#33ff57", "#3357ff"];
@@ -531,14 +571,6 @@ const fetchTestItems = async () => {
   }
 };
 
-const showWarning = (message) => {
-  toastMessage.value = message;
-  showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 3000); // Toast verschwindet nach 3 Sekunden
-};
-
 const saveUnsavedItems = async () => {
   const token = localStorage.getItem("token");
 
@@ -592,6 +624,7 @@ const saveUnsavedItems = async () => {
 };
 
 const deleteTestConfig = async () => {
+  isDeleteConfirmModalOpen.value = false; // Modal schließen
   try {
     const token = localStorage.getItem("token");
     await $fetch(`${loadTestEndpoint}${loadedTestId.value}`, {
@@ -600,23 +633,21 @@ const deleteTestConfig = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
-
-    // Nach dem Löschen den Zustand zurücksetzen
+    // Zustand zurücksetzen und Erfolgsmeldung anzeigen
     loadedTestId.value = null;
     loadedTestName.value = "";
     testItems.value = [];
     selectedItems.value = [];
 
-    // Erfolgsmeldung anzeigen
-    showLoadSuccessAlert.value = true;
-    setTimeout(() => (showLoadSuccessAlert.value = false), 3000);
+    // Lösch-Feedback-Alert anzeigen
+    showDeleteSuccessAlert.value = true;
+    setTimeout(() => (showDeleteSuccessAlert.value = false), 3000);
   } catch (error) {
     console.error("Fehler beim Löschen des Sehtests:", error);
     showLoadErrorAlert.value = true;
     setTimeout(() => (showLoadErrorAlert.value = false), 3000);
   }
 };
-
 
 const handleSaveTestConfig = async () => {
   if (selectedItems.value.length === 0) {
@@ -818,9 +849,16 @@ const editItem = (index) => {
 
 const duplicateItem = (index) => {
   const item = testItems.value[index];
-  const newItem = { ...item, id: Date.now() };
-  testItems.value.push(newItem);
+  const newItem = {
+    ...item,
+    id: crypto.randomUUID(), // Neue temporäre ID setzen, um die Einzigartigkeit sicherzustellen
+    isUnsaved: true, // Markiere das Item als ungespeichert
+    createdByUser: true, // Markiere es als durch den Nutzer erstellt
+  };
+  
+  testItems.value.push(newItem); // Neues Item zu `testItems` hinzufügen
 };
+
 
 const deleteItem = (index) => {
   const itemId = testItems.value[index].id;
@@ -1292,5 +1330,4 @@ h1 {
   background-color: #333;
   color: #eee;
 }
-
 </style>
