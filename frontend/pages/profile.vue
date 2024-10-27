@@ -37,7 +37,7 @@
         <p>Was möchten Sie mit diesem Sehtest tun?</p>
         <div class="modal-footer">
           <UButton @click="editTest(selectedTestId)" class="btn">Bearbeiten</UButton>
-          <UButton @click="runTest(selectedTestId)" class="btn">Durchführen</UButton>
+          <UButton :to="{ path: '/playscreen', query: { testConfigId: selectedTestId } }" class="btn">Durchführen</UButton>
           <UButton @click="isOptionsModalOpen = false" class="btn">Abbrechen</UButton>
         </div>
       </div>
@@ -114,11 +114,6 @@ async function editTest(id) {
     path: "/configurator",
     query: { id },
   });
-}
-
-async function runTest(id) {
-  isOptionsModalOpen.value = false;
-  await navigateTo(`/run-test/${id}`);
 }
 
 async function logout() {

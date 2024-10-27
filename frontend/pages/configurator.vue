@@ -70,7 +70,7 @@
         title="Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
         class="mb-4"
     /></transition>
-   
+
     <transition name="fade-alert">
       <UAlert
         v-if="showDeleteSuccessAlert"
@@ -148,6 +148,17 @@
     <!-- Buttons zum Speichern oder Abrufen des Sehtests -->
     <!-- Buttons zum Speichern oder Abrufen des Sehtests -->
     <div class="button-group">
+      <UButton
+        v-if="loadedTestId"
+        class="green"
+        style="padding: 8px 20px; font-size: 16px"
+        :to="{ path: '/playscreen', query: { testConfigId: loadedTestId } }"
+        variant="solid"
+      >
+        Sehtest durchführen
+        <UIcon name="heroicons:cloud-arrow-down-16-solid" class="w-5 h-5" />
+      </UButton>
+
       <UButton
         class="btn"
         style="padding: 8px 20px; font-size: 16px"
@@ -451,7 +462,9 @@
         </p>
       </div>
       <div class="modal-footer">
-        <button class="btn delete-btn-scnd" @click="deleteTestConfig">Ja, löschen</button>
+        <button class="btn delete-btn-scnd" @click="deleteTestConfig">
+          Ja, löschen
+        </button>
         <button class="btn" @click="isDeleteConfirmModalOpen = false">
           Abbrechen
         </button>
@@ -466,7 +479,7 @@ import { watch } from "vue";
 import { useRoute } from "vue-router";
 
 definePageMeta({
-  middleware: 'auth',
+  middleware: "auth",
 });
 
 const route = useRoute();
@@ -648,6 +661,13 @@ const deleteTestConfig = async () => {
     setTimeout(() => (showLoadErrorAlert.value = false), 3000);
   }
 };
+
+async function startTest(testConfigId) {
+  await navigateTo({
+    path: "/playscreen",
+    query: { test_config: testConfigId },
+  });
+}
 
 const handleSaveTestConfig = async () => {
   if (selectedItems.value.length === 0) {
@@ -855,10 +875,9 @@ const duplicateItem = (index) => {
     isUnsaved: true, // Markiere das Item als ungespeichert
     createdByUser: true, // Markiere es als durch den Nutzer erstellt
   };
-  
+
   testItems.value.push(newItem); // Neues Item zu `testItems` hinzufügen
 };
-
 
 const deleteItem = (index) => {
   const itemId = testItems.value[index].id;
@@ -1281,6 +1300,15 @@ h1 {
   margin-bottom: 30px;
   font-size: 14px;
   color: #666;
+}
+
+.green {
+  background-color: #4caf50;
+}
+
+.green:hover {
+  background-color: #26a82a;
+  transition: 200ms ease-in-out;
 }
 
 .toast-warning {
