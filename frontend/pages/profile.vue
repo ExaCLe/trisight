@@ -1,21 +1,25 @@
 <template>
+
+  
   <UContainer class="container">
-    <UButton @click="logout" class="logout-button bg-blue-dianne-900" size="xl">Logout</UButton>
+    <div class="heading-2">
+      <h2>Deine gespeicherten Sehtests:</h2>
+    </div>
 
-
-    <h2>Deine gespeicherten Sehtests:</h2>
+    <!-- Ladeanimation -->
+    <div v-if="isLoading" class="loader"></div>
 
     <!-- Sehtest Übersicht -->
-    <div class="tile-grid">
-      <div 
-        v-for="test in userTests" 
-        :key="test.id" 
+    <div v-else class="tile-grid">
+      <div
+        v-for="test in userTests"
+        :key="test.id"
         class="test-tile"
         @click="openTestOptions(test.id)"
       >
         <div class="tile-content">
           <span>ID: {{ test.id }}</span>
-          <span class="name">{{ test.name }}</span> <!-- Zeigt den Namen des Sehtests an -->
+          <span class="name">{{ test.name }}</span>
         </div>
       </div>
     </div>
@@ -32,17 +36,20 @@
         </div>
       </div>
     </UModal>
+
+    <UButton @click="logout" class="logout-button bg-blue-dianne-900" size="xl">Logout</UButton>
   </UContainer>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRuntimeConfig, navigateTo } from 'nuxt/app';
+import { ref, onMounted } from "vue";
+import { useRuntimeConfig, navigateTo } from "nuxt/app";
 
 const toast = useToast();
 const config = useRuntimeConfig();
 
 const userTests = ref([]);
+const isLoading = ref(true); // Ladezustand hinzufügen
 const isOptionsModalOpen = ref(false);
 const selectedTestId = ref(null);
 const userId = ref(null);
@@ -51,17 +58,18 @@ async function fetchUserId() {
   try {
     const response = await $fetch(`${config.public.backendUrl}/api/users/me`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
     });
-    userId.value = response.id; // Benutzer-ID speichern
-    fetchUserTests(); // Tests für diesen Benutzer abrufen
+    userId.value = response.id;
+    fetchUserTests();
   } catch (error) {
     toast.add({
-      title: 'Fehler beim Abrufen der Benutzer-ID.',
-      id: 'fetch-user-id-failed',
+      title: "Fehler beim Abrufen der Benutzer-ID.",
+      id: "fetch-user-id-failed",
       color: "red",
     });
+    isLoading.value = false; // Beenden des Ladens bei Fehler
   }
 }
 
@@ -69,18 +77,18 @@ async function fetchUserTests() {
   try {
     const response = await $fetch(`${config.public.backendUrl}/api/test_configs`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
     });
-
-    // Nur Tests abrufen, bei denen die user_id mit der Benutzer-ID übereinstimmt
-    userTests.value = response.filter(test => test.user_id === userId.value);
+    userTests.value = response.filter((test) => test.user_id === userId.value);
   } catch (error) {
     toast.add({
-      title: 'Fehler beim Abrufen der Sehtests. Bitte versuchen Sie es erneut.',
-      id: 'fetch-tests-failed',
+      title: "Fehler beim Abrufen der Sehtests. Bitte versuchen Sie es erneut.",
+      id: "fetch-tests-failed",
       color: "red",
     });
+  } finally {
+    isLoading.value = false; // Ladezustand beenden
   }
 }
 
@@ -93,11 +101,9 @@ async function editTest(id) {
   isOptionsModalOpen.value = false;
   await navigateTo({
     path: "/configurator",
-    query: { id }, // Weiterleitung ohne den vorherigen Weg über inputTestId
+    query: { id },
   });
 }
-
-
 
 async function runTest(id) {
   isOptionsModalOpen.value = false;
@@ -107,25 +113,27 @@ async function runTest(id) {
 async function logout() {
   try {
     await $fetch(`${config.public.backendUrl}/api/users/logout`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
     });
-    localStorage.removeItem('token');
-    await navigateTo('/login');
+    localStorage.removeItem("token");
+    await navigateTo("/login");
   } catch (error) {
     toast.add({
-      title: 'Logout fehlgeschlagen. Bitte versuchen Sie es erneut.',
-      id: 'logout-failed',
+      title: "Logout fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      id: "logout-failed",
       color: "red",
     });
   }
 }
 
 onMounted(() => {
-  fetchUserId(); // Benutzer-ID abrufen und Tests laden
+  fetchUserId();
 });
+
+
 </script>
 
 <style scoped>
@@ -135,6 +143,11 @@ onMounted(() => {
   align-items: center;
   height: 60vh;
   gap: 20px;
+}
+
+.heading-2 h2 {
+  margin: 20px;
+  font-size: 20px;
 }
 
 .tile-grid {
@@ -199,5 +212,25 @@ onMounted(() => {
 .name {
   color: rgb(133, 133, 133);
   font-weight: 300;
+}
+
+/* Ladeanimation */
+.loader {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #185262;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-top: 20px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
