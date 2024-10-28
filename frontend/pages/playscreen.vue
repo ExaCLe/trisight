@@ -220,7 +220,6 @@ const fetchCustomTestData = async (testConfigId) => {
     return response;
   } catch (error) {
     fetchError.value = true;
-    console.error("Fehler beim Laden der benutzerdefinierten Testkonfiguration:", error);
     return null;
   }
 };

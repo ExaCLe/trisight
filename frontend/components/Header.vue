@@ -12,7 +12,7 @@
       <!-- Darkmode Schalter -->
       <button @click="themeStore.toggleDarkMode" class="darkmode-toggle">
         <span v-if="themeStore.isDarkMode"><UIcon name="i-heroicons-moon-20-solid" class="w-12 h-10" /></span>
-        <span v-else><UIcon name="i-heroicons-sun" class="w-12 h-10" /></span>
+        <span v-else><UIcon name="i-heroicons-sun-solid" class="w-12 h-10" /></span>
       </button>
 
       <NuxtLink v-if="loggedIn" class="login-button" :to="{ path: './profile' }">Profile</NuxtLink>
@@ -109,7 +109,4 @@ header {
   color: #ddd;
 }
 
-.dm-button {
-  
-}
 </style>

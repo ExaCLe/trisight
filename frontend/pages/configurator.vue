@@ -138,7 +138,7 @@
       </div>
 
       <!-- Platzhalter-Kachel mit einem Pluszeichen hinzufügen -->
-      <div class="test-tile add-item-tile" @click="isOpen = true">
+      <div class="test-tile add-item-tile" @click="isNewItemModalOpen = true">
         <div class="tile-content">
           <span class="plus-sign">+</span>
         </div>
@@ -156,7 +156,7 @@
         variant="solid"
       >
         Sehtest durchführen
-        <UIcon name="heroicons:cloud-arrow-down-16-solid" class="w-5 h-5" />
+        <UIcon name="i-heroicons-play-circle-solid" class="w-5 h-5" />
       </UButton>
 
       <UButton
@@ -193,13 +193,13 @@
   </div>
 
   <!-- MODAL FÜR NEUE ITEM CONFIGS -->
-  <UModal v-model="isOpen">
+  <UModal v-model="isNewItemModalOpen">
     <div class="modal-content">
       <h2 class="modal-title">Sehtest Objekt konfigurieren</h2>
       <div class="modal-body">
         <!-- Vorschau des Dreiecks auf dem Kreis -->
         <div class="preview-container">
-          <div class="preview-box">
+          <div class="preview-box"  :style="{ transform: circleSize > 300 ? 'scale(0.6)' : 'scale(1)' }"> 
             <div
               class="circle"
               :style="{
@@ -234,7 +234,7 @@
               type="number"
               v-model="triangleSize"
               min="10"
-              max="120"
+              max="220"
             />
             <div>
               <button class="size-btn" @click="adjustTriangleSize(5)">
@@ -251,7 +251,7 @@
               type="number"
               v-model="circleSize"
               min="50"
-              max="200"
+              max="660"
             />
             <div>
               <button class="size-btn" @click="adjustCircleSize(5)">
@@ -294,7 +294,7 @@
       <!-- Speichern und Schließen Buttons -->
       <div class="modal-footer">
         <button class="btn" @click="saveItemConfig">Speichern</button>
-        <button class="btn" @click="isOpen = false">Abbrechen</button>
+        <button class="btn" @click="isNewItemModalOpen = false">Abbrechen</button>
       </div>
     </div>
   </UModal>
@@ -384,7 +384,7 @@
               type="number"
               v-model="triangleSize"
               min="10"
-              max="120"
+              max="220"
             />
             <div>
               <button class="size-btn" @click="adjustTriangleSize(5)">
@@ -401,7 +401,7 @@
               type="number"
               v-model="circleSize"
               min="50"
-              max="200"
+              max="600"
             />
             <div>
               <button class="size-btn" @click="adjustCircleSize(5)">
@@ -504,7 +504,7 @@ const showSelectionWarning = ref(false);
 const showDeleteSuccessAlert = ref(false);
 
 // modale
-const isOpen = ref(false);
+const isNewItemModalOpen = ref(false);
 const isEditModalOpen = ref(false);
 const isLoadModalOpen = ref(false);
 const isSelectionWarningOpen = ref(false);
@@ -556,33 +556,6 @@ const generateRandomConfigs = () => {
   testItems.value = Array.from({ length: 15 }, randomConfig);
 };
 
-const fetchRandomItems = async (endpoint) => {
-  try {
-    const response = await $fetch(endpoint);
-    const items = response?.item_configs || [];
-    return items.sort(() => 0.5 - Math.random()).slice(0, 5);
-  } catch (error) {
-    console.error(`Fehler beim Abrufen von Items von ${endpoint}:`, error);
-    fetchError.value = true;
-    return [];
-  }
-};
-
-const fetchTestItems = async () => {
-  try {
-    const [easyItems, mediumItems, hardItems] = await Promise.all([
-      fetchRandomItems(testItemsEndpointEasy),
-      fetchRandomItems(testItemsEndpointMedium),
-      fetchRandomItems(testItemsEndpointHard),
-    ]);
-
-    testItems.value = [...easyItems, ...mediumItems, ...hardItems];
-    fetchError.value = false;
-  } catch (error) {
-    console.error("Fehler beim Abrufen der Testkonfigurationen:", error);
-    fetchError.value = true;
-  }
-};
 
 const saveUnsavedItems = async () => {
   const token = localStorage.getItem("token");
@@ -615,24 +588,12 @@ const saveUnsavedItems = async () => {
             },
           }
         );
-
-        console.log(
-          `Item ${itemId} erfolgreich gespeichert, neue ID: ${response.id}`
-        );
-
         // Aktualisiere die ID und markiere das Item als gespeichert
         item.id = response.id;
         item.isUnsaved = false;
         selectedItems.value[i] = response.id;
-      } catch (error) {
-        console.error(
-          "Fehler beim Speichern eines ungespeicherten Items:",
-          error
-        );
-      }
-    } else {
-      console.log(`Item ${itemId} wurde bereits in der Datenbank gespeichert.`);
-    }
+      } catch (error) {}
+    } 
   }
 };
 
@@ -656,18 +617,10 @@ const deleteTestConfig = async () => {
     showDeleteSuccessAlert.value = true;
     setTimeout(() => (showDeleteSuccessAlert.value = false), 3000);
   } catch (error) {
-    console.error("Fehler beim Löschen des Sehtests:", error);
     showLoadErrorAlert.value = true;
     setTimeout(() => (showLoadErrorAlert.value = false), 3000);
   }
 };
-
-async function startTest(testConfigId) {
-  await navigateTo({
-    path: "/playscreen",
-    query: { test_config: testConfigId },
-  });
-}
 
 const handleSaveTestConfig = async () => {
   if (selectedItems.value.length === 0) {
@@ -706,25 +659,24 @@ const saveNewTestConfig = async () => {
     showSuccessAlert.value = true;
     setTimeout(() => (showSuccessAlert.value = false), 3000);
   } catch (error) {
-    console.error("Fehler beim Speichern des Sehtests:", error);
     showSaveErrorAlert.value = true;
     setTimeout(() => (showSaveErrorAlert.value = false), 3000);
   }
 };
 
 watch(triangleSize, (newValue) => {
-  if (newValue > 120) triangleSize.value = 120;
+  if (newValue > 220) triangleSize.value = 220;
   if (newValue < 10) triangleSize.value = 10;
 });
 
 watch(circleSize, (newValue) => {
-  if (newValue > 200) circleSize.value = 200;
+  if (newValue > 660) circleSize.value = 660;
   if (newValue < 50) circleSize.value = 50;
 });
 
 const adjustCircleSize = (change) => {
   const newSize = circleSize.value + change;
-  if (newSize >= 50 && newSize <= 200) circleSize.value = newSize;
+  circleSize.value = newSize;
 };
 
 const toggleSelection = (id) => {
@@ -758,7 +710,6 @@ const loadTest = async () => {
       throw new Error("Ungültige Antwortstruktur.");
     }
   } catch (error) {
-    console.error("Fehler beim Laden des Sehtests:", error);
     showLoadErrorAlert.value = true;
     setTimeout(() => (showLoadErrorAlert.value = false), 3000);
   }
@@ -787,7 +738,6 @@ const loadTestById = async (testId) => {
       throw new Error("Ungültige Antwortstruktur.");
     }
   } catch (error) {
-    console.error("Fehler beim Laden des Sehtests:", error);
     showLoadErrorAlert.value = true;
     setTimeout(() => (showLoadErrorAlert.value = false), 3000);
   }
@@ -847,9 +797,7 @@ const updateItemConfig = async () => {
     tempId = null;
     isEditModalOpen.value = false;
     editingIndex.value = null;
-  } catch (error) {
-    console.error("Fehler beim Aktualisieren des Items:", error);
-  }
+  } catch (error) {}
 };
 
 const editItem = (index) => {
@@ -924,10 +872,6 @@ const saveItemConfig = async () => {
       },
     });
 
-    console.log("Authorization-Header:", {
-      Authorization: `Bearer ${token}`,
-    });
-
     // Füge das zurückgegebene Item zu `testItems` hinzu, wenn die Speicherung erfolgreich war
     testItems.value.push({
       ...response,
@@ -935,9 +879,8 @@ const saveItemConfig = async () => {
     });
     selectedItems.value.push(response.id);
     // Schließe das Modal nach dem Speichern
-    isOpen.value = false;
+    isNewItemModalOpen.value = false;
   } catch (error) {
-    console.error("Fehler beim Speichern des Items:", error);
     alert(
       "Es gab ein Problem beim Speichern des Items. Bitte versuchen Sie es erneut."
     );
@@ -970,9 +913,7 @@ const updateTestConfig = async () => {
     setTimeout(() => {
       showSuccessAlert.value = false;
     }, 3000);
-  } catch (error) {
-    console.error("Fehler beim Aktualisieren der Konfiguration:", error);
-  }
+  } catch (error) {}
 };
 
 const adjustTriangleSize = (change) => {
@@ -1226,9 +1167,8 @@ h1 {
   justify-content: center;
   align-items: center;
   margin-bottom: 20px;
-  width: 300px; /* Breite der gesamten Vorschau */
-  height: 300px; /* Höhe der gesamten Vorschau */
-  border: 1px solid #ccc; /* Optional: Rand um die Vorschau */
+  width: 700px; /* Breite der gesamten Vorschau */
+  height: 400px; /* Höhe der gesamten Vorschau */
   border-radius: 10px; /* Optional: abgerundete Ecken */
   overflow: hidden; /* Verhindert, dass Elemente aus der Box herausragen */
 }
