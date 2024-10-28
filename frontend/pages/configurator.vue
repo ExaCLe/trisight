@@ -118,7 +118,10 @@
             ></div>
           </div>
           <div class="button-container">
-            <button class="action-btn edit-btn" @click.stop="editItem(index)">
+            <button
+              class="action-btn edit-btn"
+              @click.stop="openItemModal(index)"
+            >
               <UIcon name="heroicons:pencil-square-16-solid"></UIcon>
             </button>
             <button
@@ -138,7 +141,7 @@
       </div>
 
       <!-- Platzhalter-Kachel mit einem Pluszeichen hinzufügen -->
-      <div class="test-tile add-item-tile" @click="isNewItemModalOpen = true">
+      <div class="test-tile add-item-tile" @click="openItemModal()">
         <div class="tile-content">
           <span class="plus-sign">+</span>
         </div>
@@ -192,14 +195,20 @@
     </div>
   </div>
 
-  <!-- MODAL FÜR NEUE ITEM CONFIGS -->
-  <UModal v-model="isNewItemModalOpen">
+  <UModal v-model="isItemModalOpen">
     <div class="modal-content">
-      <h2 class="modal-title">Sehtest Objekt konfigurieren</h2>
+      <h2 class="modal-title">
+        {{
+          isEditing ? "Item Konfiguration bearbeiten" : "Neues Item erstellen"
+        }}
+      </h2>
       <div class="modal-body">
         <!-- Vorschau des Dreiecks auf dem Kreis -->
         <div class="preview-container">
-          <div class="preview-box"  :style="{ transform: circleSize > 300 ? 'scale(0.6)' : 'scale(1)' }"> 
+          <div
+            class="preview-box"
+            :style="{ transform: circleSize > 300 ? 'scale(0.6)' : 'scale(1)' }"
+          >
             <div
               class="circle"
               :style="{
@@ -207,7 +216,6 @@
                 width: circleSize + 'px',
                 height: circleSize + 'px',
               }"
-              @click="selectColor('circle')"
             >
               <div class="triangle-circle">
                 <div
@@ -218,13 +226,11 @@
                     backgroundColor: triangleColor,
                     transform: getRotationStyle(modalOrientation).rotation,
                   }"
-                  @click="selectColor('triangle')"
                 ></div>
               </div>
             </div>
           </div>
         </div>
-
         <!-- Steuerungsbereich -->
         <div class="controls">
           <div class="size-controls">
@@ -290,14 +296,15 @@
           </div>
         </div>
       </div>
-
-      <!-- Speichern und Schließen Buttons -->
       <div class="modal-footer">
-        <button class="btn" @click="saveItemConfig">Speichern</button>
-        <button class="btn" @click="isNewItemModalOpen = false">Abbrechen</button>
+        <button class="btn" @click="saveOrUpdateItemConfig">
+          {{ isEditing ? "Aktualisieren" : "Speichern" }}
+        </button>
+        <button class="btn" @click="isItemModalOpen = false">Abbrechen</button>
       </div>
     </div>
   </UModal>
+  <!-- Modal zum Laden eines Sehtests -->
   <UModal v-model="isLoadModalOpen">
     <div class="modal-content">
       <h2 class="modal-title">Sehtest ID eingeben</h2>
@@ -310,6 +317,8 @@
       </div>
     </div>
   </UModal>
+
+  <!-- Modal zum Speichern einer neuen Sehtest-Konfiguration -->
   <UModal v-model="isNameModalOpen">
     <div class="modal-content">
       <h2 class="modal-title">Konfigurationsnamen eingeben</h2>
@@ -326,151 +335,18 @@
     </div>
   </UModal>
 
-  <UModal v-model="isSelectionWarningOpen">
-    <div class="modal-content">
-      <h2 class="modal-title">Leere Konfiguration</h2>
-      <div class="modal-body">
-        <p>
-          Sie haben keine Kacheln ausgewählt. Bitte wählen Sie mindestens eine
-          Kachel aus, bevor Sie die Konfiguration speichern.
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn" @click="isSelectionWarningOpen = false">OK</button>
-      </div>
+  <!-- Modal zur Bestätigung des Löschvorgangs -->
+<UModal v-model="isDeleteConfirmModalOpen">
+  <div class="modal-content">
+    <h2 class="modal-title">Sehtest löschen?</h2>
+    <p>Möchten Sie diesen Sehtest wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>
+    <div class="modal-footer">
+      <button class="btn delete-btn" @click="deleteTestConfig">Löschen</button>
+      <button class="btn" @click="isDeleteConfirmModalOpen = false">Abbrechen</button>
     </div>
-  </UModal>
+  </div>
+</UModal>
 
-  <!-- MODAL FÜR BEREITS BESTEHENDE ITEM CONFIGS-->
-
-  <UModal v-model="isEditModalOpen">
-    <div class="modal-content">
-      <h2 class="modal-title">Item Konfiguration bearbeiten</h2>
-      <div class="modal-body">
-        <!-- Vorschau des Dreiecks auf dem Kreis -->
-        <div class="preview-container">
-          <div class="preview-box">
-            <div
-              class="circle"
-              :style="{
-                backgroundColor: circleColor,
-                width: circleSize + 'px',
-                height: circleSize + 'px',
-              }"
-              @click="selectColor('circle')"
-            >
-              <div class="triangle-circle">
-                <div
-                  class="triangle"
-                  :style="{
-                    width: triangleSize + 'px',
-                    height: triangleSize + 'px',
-                    backgroundColor: triangleColor,
-                    transform: getRotationStyle(modalOrientation).rotation,
-                  }"
-                  @click="selectColor('triangle')"
-                ></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Steuerungsbereich -->
-        <div class="controls">
-          <div class="size-controls">
-            <span>Dreieck:</span>
-            <input
-              class="size-input"
-              type="number"
-              v-model="triangleSize"
-              min="10"
-              max="220"
-            />
-            <div>
-              <button class="size-btn" @click="adjustTriangleSize(5)">
-                <UIcon name="heroicons:plus-20-solid" />
-              </button>
-              <button class="size-btn" @click="adjustTriangleSize(-5)">
-                <UIcon name="heroicons:minus-20-solid" />
-              </button>
-            </div>
-
-            <span>Kreis:</span>
-            <input
-              class="size-input"
-              type="number"
-              v-model="circleSize"
-              min="50"
-              max="600"
-            />
-            <div>
-              <button class="size-btn" @click="adjustCircleSize(5)">
-                <UIcon name="heroicons:plus-20-solid" />
-              </button>
-              <button class="size-btn" @click="adjustCircleSize(-5)">
-                <UIcon name="heroicons:minus-20-solid" />
-              </button>
-            </div>
-          </div>
-
-          <div class="color-controls">
-            <div>
-              Kreisfarbe:
-              <input class="color-input" type="color" v-model="circleColor" />
-            </div>
-            <div>
-              Dreieckfarbe:
-              <input class="color-input" type="color" v-model="triangleColor" />
-            </div>
-          </div>
-
-          <div class="direction-controls">
-            <button class="direction-btn" @click="setModalOrientation('N')">
-              Oben
-            </button>
-            <button class="direction-btn" @click="setModalOrientation('E')">
-              Rechts
-            </button>
-            <button class="direction-btn" @click="setModalOrientation('S')">
-              Unten
-            </button>
-            <button class="direction-btn" @click="setModalOrientation('W')">
-              Links
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Aktualisieren und Schließen Buttons -->
-      <div class="modal-footer">
-        <button class="btn" @click="updateItemConfig(editingIndex)">
-          Aktualisieren
-        </button>
-        <button class="btn" @click="isEditModalOpen = false">Abbrechen</button>
-      </div>
-    </div>
-  </UModal>
-
-  <!-- MODAL FÜR BESTÄTIGUNG LÖSCHEN -->
-  <UModal v-model="isDeleteConfirmModalOpen">
-    <div class="modal-content">
-      <h2 class="modal-title">Sehtest wirklich löschen?</h2>
-      <div class="modal-body">
-        <p>
-          Sind Sie sicher, dass Sie den Sehtest dauerhaft löschen möchten? Diese
-          Aktion kann nicht rückgängig gemacht werden.
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn delete-btn-scnd" @click="deleteTestConfig">
-          Ja, löschen
-        </button>
-        <button class="btn" @click="isDeleteConfirmModalOpen = false">
-          Abbrechen
-        </button>
-      </div>
-    </div>
-  </UModal>
 </template>
 
 <script setup>
@@ -483,10 +359,6 @@ definePageMeta({
 });
 
 const route = useRoute();
-
-const testItemsEndpointEasy = "http://localhost:8000/api/test_configs/1";
-const testItemsEndpointMedium = "http://localhost:8000/api/test_configs/3";
-const testItemsEndpointHard = "http://localhost:8000/api/test_configs/4";
 const saveTestEndpoint = "http://localhost:8000/api/test_configs";
 const loadTestEndpoint = "http://localhost:8000/api/test_configs/";
 
@@ -504,13 +376,14 @@ const showSelectionWarning = ref(false);
 const showDeleteSuccessAlert = ref(false);
 
 // modale
-const isNewItemModalOpen = ref(false);
-const isEditModalOpen = ref(false);
+//const isNewItemModalOpen = ref(false);
+//const isEditModalOpen = ref(false);
 const isLoadModalOpen = ref(false);
 const isSelectionWarningOpen = ref(false);
 const isNameModalOpen = ref(false);
 const isDeleteConfirmModalOpen = ref(false);
-
+const isItemModalOpen = ref(false);
+const isEditing = ref(false);
 const editingIndex = ref(null);
 
 // item confing
@@ -520,7 +393,6 @@ const circleSize = ref(150);
 const triangleSize = ref(50);
 const modalOrientation = ref("N");
 
-let tempId = null;
 
 const confirmDeleteTest = () => {
   isDeleteConfirmModalOpen.value = true;
@@ -555,7 +427,6 @@ const generateRandomConfigs = () => {
 
   testItems.value = Array.from({ length: 15 }, randomConfig);
 };
-
 
 const saveUnsavedItems = async () => {
   const token = localStorage.getItem("token");
@@ -593,7 +464,7 @@ const saveUnsavedItems = async () => {
         item.isUnsaved = false;
         selectedItems.value[i] = response.id;
       } catch (error) {}
-    } 
+    }
   }
 };
 
@@ -631,11 +502,12 @@ const handleSaveTestConfig = async () => {
 
   await saveUnsavedItems();
   if (!loadedTestId.value) {
-    isNameModalOpen.value = true;
+    isNameModalOpen.value = true; // Öffnet das Speichern-Modal
   } else {
     updateTestConfig();
   }
 };
+
 
 const saveNewTestConfig = async () => {
   await saveUnsavedItems();
@@ -715,6 +587,33 @@ const loadTest = async () => {
   }
 };
 
+const resetModalFields = () => {
+  circleColor.value = "#ffcc00";
+  triangleColor.value = "#3333ff";
+  circleSize.value = 150;
+  triangleSize.value = 50;
+  modalOrientation.value = "N";
+};
+
+const openItemModal = (index = null) => {
+  if (index !== null) {
+    // Bearbeiten-Modus
+    const item = testItems.value[index];
+    circleColor.value = item.circle_color;
+    triangleColor.value = item.triangle_color;
+    circleSize.value = item.circle_size;
+    triangleSize.value = item.triangle_size;
+    modalOrientation.value = item.orientation;
+    isEditing.value = true;
+    editingIndex.value = index;
+  } else {
+    // Neu-Modus
+    resetModalFields(); // setzt die Felder zurück
+    isEditing.value = false;
+  }
+  isItemModalOpen.value = true;
+};
+
 const loadTestById = async (testId) => {
   try {
     const token = localStorage.getItem("token");
@@ -743,77 +642,6 @@ const loadTestById = async (testId) => {
   }
 };
 
-const updateItemConfig = async () => {
-  if (editingIndex.value === null) return;
-
-  const updatedItem = {
-    triangle_size: triangleSize.value,
-    triangle_color: triangleColor.value,
-    circle_size: circleSize.value,
-    circle_color: circleColor.value,
-    orientation: modalOrientation.value,
-    time_visible_ms: 5000,
-  };
-
-  try {
-    const token = localStorage.getItem("token");
-    const item = testItems.value[editingIndex.value];
-
-    let response;
-    // Wenn es eine temporäre ID oder das `createdByUser`-Flag gibt, führen wir einen POST-Request aus
-    if (!item.id || item.createdByUser) {
-      response = await $fetch("http://localhost:8000/api/item_configs", {
-        method: "POST",
-        body: updatedItem,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      // Die neue Backend-ID wird im Item und in `selectedItems` aktualisiert
-      item.id = response.id;
-      item.isUnsaved = false;
-
-      // In `selectedItems` die alte temporäre ID durch die neue Backend-ID ersetzen
-      const index = selectedItems.value.indexOf(tempId);
-      if (index !== -1) {
-        selectedItems.value[index] = response.id;
-      }
-    } else {
-      // Wenn das Item bereits existiert, führen wir ein PUT-Update durch
-      await $fetch(`http://localhost:8000/api/item_configs/${item.id}`, {
-        method: "PUT",
-        body: updatedItem,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    }
-
-    // Aktualisieren des bearbeiteten Items
-    testItems.value[editingIndex.value] = { ...updatedItem, id: item.id };
-
-    // Reset des Temp-ID und Schließen des Modals
-    tempId = null;
-    isEditModalOpen.value = false;
-    editingIndex.value = null;
-  } catch (error) {}
-};
-
-const editItem = (index) => {
-  const item = testItems.value[index];
-  tempId = item.id; // Temporäre ID speichern, bevor das Item bearbeitet wird
-
-  // Setze die Werte für das Modal
-  circleColor.value = item.circle_color;
-  triangleColor.value = item.triangle_color;
-  circleSize.value = item.circle_size;
-  triangleSize.value = item.triangle_size;
-  modalOrientation.value = item.orientation;
-
-  isEditModalOpen.value = true; // Öffnet das Edit-Modal
-  editingIndex.value = index; // Speichert den Index des bearbeiteten Items
-};
 
 const duplicateItem = (index) => {
   const item = testItems.value[index];
@@ -851,39 +679,70 @@ const getCircleSize = (size) => Math.min(size * 0.8, 80);
 
 const getTriangleSize = (size) => Math.min(size * 0.5, 40);
 
-const saveItemConfig = async () => {
-  // Erstelle die neue Item-Konfiguration basierend auf den Modal-Werten
-  const newItem = {
+const saveOrUpdateItemConfig = async () => {
+  const updatedItem = {
     triangle_size: triangleSize.value,
     triangle_color: triangleColor.value,
     circle_size: circleSize.value,
     circle_color: circleColor.value,
-    time_visible_ms: 5000,
     orientation: modalOrientation.value,
+    time_visible_ms: 5000,
   };
 
-  try {
-    const token = localStorage.getItem("token");
-    const response = await $fetch("http://localhost:8000/api/item_configs", {
-      method: "POST",
-      body: newItem,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  const token = localStorage.getItem("token");
 
-    // Füge das zurückgegebene Item zu `testItems` hinzu, wenn die Speicherung erfolgreich war
-    testItems.value.push({
-      ...response,
-      id: response.id, // ID vom Backend übernehmen
-    });
-    selectedItems.value.push(response.id);
-    // Schließe das Modal nach dem Speichern
-    isNewItemModalOpen.value = false;
-  } catch (error) {
-    alert(
-      "Es gab ein Problem beim Speichern des Items. Bitte versuchen Sie es erneut."
-    );
+  if (isEditing.value && editingIndex.value !== null) {
+    // Bearbeiten eines bestehenden Items
+    const item = testItems.value[editingIndex.value];
+    const oldItemId = item.id;
+
+    try {
+      let response;
+      if (!item.id || item.createdByUser) {
+        // POST-Request für ein neues Item
+        response = await $fetch("http://localhost:8000/api/item_configs", {
+          method: "POST",
+          body: updatedItem,
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // Aktualisieren der neuen ID und `selectedItems`
+        item.id = response.id;
+        item.isUnsaved = false;
+        const index = selectedItems.value.indexOf(oldItemId);
+        if (index !== -1) {
+          selectedItems.value.splice(index, 1, response.id);
+        }
+      } else {
+        // PUT-Request für ein bereits gespeichertes Item
+        await $fetch(`http://localhost:8000/api/item_configs/${item.id}`, {
+          method: "PUT",
+          body: updatedItem,
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
+      // Aktualisiere das bearbeitete Item in `testItems`
+      testItems.value[editingIndex.value] = { ...updatedItem, id: item.id };
+      editingIndex.value = null;
+      isItemModalOpen.value = false;
+    } catch (error) {
+      console.error("Fehler beim Speichern/Aktualisieren:", error);
+    }
+  } else {
+    // Neues Item erstellen und in `testItems` und `selectedItems` hinzufügen
+    try {
+      const response = await $fetch("http://localhost:8000/api/item_configs", {
+        method: "POST",
+        body: updatedItem,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      testItems.value.push({ ...updatedItem, id: response.id });
+      selectedItems.value.push(response.id);
+      isItemModalOpen.value = false;
+    } catch (error) {
+      console.error("Fehler beim Erstellen eines neuen Items:", error);
+    }
   }
 };
 
