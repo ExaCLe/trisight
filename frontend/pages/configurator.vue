@@ -638,11 +638,40 @@ const duplicateItem = (index) => {
   testItems.value.push(newItem); // Neues Item zu `testItems` hinzufügen
 };
 
-const deleteItem = (index) => {
-  const itemId = testItems.value[index].id;
+const deleteItem = async (index) => {
+  const item = testItems.value[index];
+  const itemId = item.id;
+
+  // Prüfen, ob die Item-Config eine persistente ID aus der Datenbank hat
+  if (itemId && !item.isUnsaved) {
+    try {
+      const token = localStorage.getItem("token");
+      await $fetch(`http://localhost:8000/api/item_configs/${itemId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Erfolgsmeldung anzeigen
+      triggerAlert("success", "Item erfolgreich gelöscht!");
+
+    } catch (error) {
+      if (error.response?.status === 401) {
+        triggerAlert("error", "Sie sind nicht berechtigt, dieses Item zu löschen.");
+        return;
+      } else {
+        triggerAlert("error", "Fehler beim Löschen des Items.");
+        return;
+      }
+    }
+  }
+
+  // Entferne die Item-Config im Frontend, egal ob sie in der Datenbank war oder nicht
   testItems.value.splice(index, 1);
   selectedItems.value = selectedItems.value.filter((id) => id !== itemId);
 };
+
 
 const setModalOrientation = (newOrientation) => {
   modalOrientation.value = newOrientation;
