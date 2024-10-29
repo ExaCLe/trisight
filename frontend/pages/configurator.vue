@@ -19,65 +19,26 @@
       möchten, oder erstellen Sie sich Ihre eigenen Kacheln.
     </p>
 
+    <!-- Dynamischer Success Alert -->
     <transition name="fade-alert">
       <UAlert
-        v-if="showSuccessAlert"
-        icon="i-heroicons-check-circle"
-        color="green"
+        v-if="showAlert && alertType === 'success'"
+        :icon="alertIcon"
+        :color="alertColor"
         variant="solid"
-        title="Sehtest erfolgreich gespeichert!"
+        :title="alertMessage"
         class="mb-4"
       />
     </transition>
 
+    <!-- Dynamischer Error Alert -->
     <transition name="fade-alert">
       <UAlert
-        v-if="showLoadSuccessAlert"
-        icon="i-heroicons-check-circle"
-        color="green"
+        v-if="showAlert && alertType === 'error'"
+        :icon="alertIcon"
+        :color="alertColor"
         variant="solid"
-        title="Sehtest erfolgreich geladen!"
-        class="mb-4"
-      />
-    </transition>
-
-    <transition name="fade-alert">
-      <UAlert
-        v-if="showLoadErrorAlert"
-        icon="i-heroicons-exclamation-triangle"
-        color="red"
-        variant="solid"
-        title="Fehler beim Laden des Sehtests. Bitte versuchen Sie es erneut."
-        class="mb-4"
-    /></transition>
-
-    <transition name="fade-alert">
-      <UAlert
-        v-if="showSaveErrorAlert"
-        icon="i-heroicons-exclamation-triangle"
-        color="red"
-        variant="solid"
-        title="Fehler beim Speichern der Konfiguration."
-        class="mb-4"
-    /></transition>
-
-    <transition name="fade-alert">
-      <UAlert
-        v-if="showSelectionWarning"
-        icon="i-heroicons-command-line"
-        color="red"
-        variant="subtle"
-        title="Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
-        class="mb-4"
-    /></transition>
-
-    <transition name="fade-alert">
-      <UAlert
-        v-if="showDeleteSuccessAlert"
-        icon="i-heroicons-check-circle"
-        color="red"
-        variant="solid"
-        title="Sehtest erfolgreich gelöscht!"
+        :title="alertMessage"
         class="mb-4"
       />
     </transition>
@@ -110,8 +71,12 @@
             <div
               class="triangle"
               :style="{
-                width: getTriangleSize(item.triangle_size) + 'px',
-                height: getTriangleSize(item.triangle_size) + 'px',
+                width:
+                  getTriangleSize(item.triangle_size, item.circle_size, true) +
+                  'px',
+                height:
+                  getTriangleSize(item.triangle_size, item.circle_size, true) +
+                  'px',
                 backgroundColor: item.triangle_color,
                 transform: getRotationStyle(item.orientation).rotation,
               }"
@@ -336,17 +301,23 @@
   </UModal>
 
   <!-- Modal zur Bestätigung des Löschvorgangs -->
-<UModal v-model="isDeleteConfirmModalOpen">
-  <div class="modal-content">
-    <h2 class="modal-title">Sehtest löschen?</h2>
-    <p>Möchten Sie diesen Sehtest wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>
-    <div class="modal-footer">
-      <button class="btn delete-btn" @click="deleteTestConfig">Löschen</button>
-      <button class="btn" @click="isDeleteConfirmModalOpen = false">Abbrechen</button>
+  <UModal v-model="isDeleteConfirmModalOpen">
+    <div class="modal-content">
+      <h2 class="modal-title">Sehtest löschen?</h2>
+      <p>
+        Möchten Sie diesen Sehtest wirklich löschen? Diese Aktion kann nicht
+        rückgängig gemacht werden.
+      </p>
+      <div class="modal-footer">
+        <button class="btn delete-btn" @click="deleteTestConfig">
+          Löschen
+        </button>
+        <button class="btn" @click="isDeleteConfirmModalOpen = false">
+          Abbrechen
+        </button>
+      </div>
     </div>
-  </div>
-</UModal>
-
+  </UModal>
 </template>
 
 <script setup>
@@ -368,18 +339,30 @@ const fetchError = ref(false);
 const inputTestId = ref("");
 const configName = ref("");
 const loadedTestName = ref("");
-const showSuccessAlert = ref(false);
-const showLoadSuccessAlert = ref(false);
-const showLoadErrorAlert = ref(false);
-const showSaveErrorAlert = ref(false);
-const showSelectionWarning = ref(false);
-const showDeleteSuccessAlert = ref(false);
+
+//ALERT
+const showAlert = ref(false);
+const alertType = ref("");
+const alertMessage = ref("");
+const alertIcon = ref("");
+const alertColor = ref("");
+
+const triggerAlert = (type, message) => {
+  alertType.value = type;
+  alertMessage.value = message;
+  alertIcon.value =
+    type === "success"
+      ? "i-heroicons-check-circle"
+      : "i-heroicons-exclamation-triangle";
+  alertColor.value = type === "success" ? "green" : "red";
+  showAlert.value = true;
+
+  // Automatisches Ausblenden nach 3 Sekunden
+  setTimeout(() => (showAlert.value = false), 3000);
+};
 
 // modale
-//const isNewItemModalOpen = ref(false);
-//const isEditModalOpen = ref(false);
 const isLoadModalOpen = ref(false);
-const isSelectionWarningOpen = ref(false);
 const isNameModalOpen = ref(false);
 const isDeleteConfirmModalOpen = ref(false);
 const isItemModalOpen = ref(false);
@@ -392,7 +375,7 @@ const triangleColor = ref("#3333ff");
 const circleSize = ref(150);
 const triangleSize = ref(50);
 const modalOrientation = ref("N");
-
+const previewScaleFactor = 0.6;
 
 const confirmDeleteTest = () => {
   isDeleteConfirmModalOpen.value = true;
@@ -437,10 +420,6 @@ const saveUnsavedItems = async () => {
 
     // Prüfen, ob das Item ungespeichert ist
     if (item && item.isUnsaved) {
-      console.log(
-        `Speichern von ungespeichertem Item ${itemId} in der Datenbank...`
-      );
-
       try {
         const response = await $fetch(
           "http://localhost:8000/api/item_configs",
@@ -463,7 +442,9 @@ const saveUnsavedItems = async () => {
         item.id = response.id;
         item.isUnsaved = false;
         selectedItems.value[i] = response.id;
-      } catch (error) {}
+      } catch (error) {
+        triggerAlert("error", "Fehler beim Speichern des Items.");
+      }
     }
   }
 };
@@ -485,18 +466,25 @@ const deleteTestConfig = async () => {
     selectedItems.value = [];
 
     // Lösch-Feedback-Alert anzeigen
-    showDeleteSuccessAlert.value = true;
-    setTimeout(() => (showDeleteSuccessAlert.value = false), 3000);
+    triggerAlert("success", "Sehtest erfolgreich gelöscht!");
   } catch (error) {
-    showLoadErrorAlert.value = true;
-    setTimeout(() => (showLoadErrorAlert.value = false), 3000);
+    if (error.response?.status === 401) {
+      triggerAlert(
+        "error",
+        "Sie sind nicht berechtigt, diesen Sehtest zu löschen."
+      );
+    } else {
+      triggerAlert("error", "Fehler beim Löschen des Sehtests.");
+    }
   }
 };
 
 const handleSaveTestConfig = async () => {
   if (selectedItems.value.length === 0) {
-    showSelectionWarning.value = true;
-    setTimeout(() => (showSelectionWarning.value = false), 3000);
+    triggerAlert(
+      "error",
+      "Bitte wählen Sie mindestens eine Kachel aus, bevor Sie speichern."
+    );
     return;
   }
 
@@ -508,10 +496,8 @@ const handleSaveTestConfig = async () => {
   }
 };
 
-
 const saveNewTestConfig = async () => {
   await saveUnsavedItems();
-
   try {
     const token = localStorage.getItem("token");
     const response = await $fetch(saveTestEndpoint, {
@@ -528,11 +514,9 @@ const saveNewTestConfig = async () => {
     loadedTestId.value = response.id;
     loadedTestName.value = configName.value;
     isNameModalOpen.value = false;
-    showSuccessAlert.value = true;
-    setTimeout(() => (showSuccessAlert.value = false), 3000);
+    triggerAlert("success", "Sehtest erfolgreich gespeichert!");
   } catch (error) {
-    showSaveErrorAlert.value = true;
-    setTimeout(() => (showSaveErrorAlert.value = false), 3000);
+    triggerAlert("error", "Fehler beim Speichern der Konfiguration.");
   }
 };
 
@@ -576,14 +560,16 @@ const loadTest = async () => {
       loadedTestName.value = response.name;
       isLoadModalOpen.value = false;
 
-      showLoadSuccessAlert.value = true;
-      setTimeout(() => (showLoadSuccessAlert.value = false), 3000);
+      triggerAlert("success", "Sehtest erfolgreich geladen!");
     } else {
-      throw new Error("Ungültige Antwortstruktur.");
+      triggerAlert("error", "Fehler. Ungültige Antwortstruktur.");
     }
   } catch (error) {
-    showLoadErrorAlert.value = true;
-    setTimeout(() => (showLoadErrorAlert.value = false), 3000);
+    if (error.response?.status === 404) {
+      triggerAlert("error", "Fehler: Dieser Sehtest existiert nicht");
+    } else {
+      triggerAlert("error", "Fehler beim Laden der Konfiguration.");
+    }
   }
 };
 
@@ -631,17 +617,14 @@ const loadTestById = async (testId) => {
       loadedTestName.value = response.name;
       isLoadModalOpen.value = false;
 
-      showLoadSuccessAlert.value = true;
-      setTimeout(() => (showLoadSuccessAlert.value = false), 3000);
+      triggerAlert("success", "Sehtest erfolgreich geladen!");
     } else {
-      throw new Error("Ungültige Antwortstruktur.");
+      triggerAlert("error", "Fehler. Ungültige Antwortstruktur.");
     }
   } catch (error) {
-    showLoadErrorAlert.value = true;
-    setTimeout(() => (showLoadErrorAlert.value = false), 3000);
+    triggerAlert("error", "Fehler beim Laden des Sehtests.");
   }
 };
-
 
 const duplicateItem = (index) => {
   const item = testItems.value[index];
@@ -677,7 +660,14 @@ const getRotationStyle = (orientation) => {
 
 const getCircleSize = (size) => Math.min(size * 0.8, 80);
 
-const getTriangleSize = (size) => Math.min(size * 0.5, 40);
+const getTriangleSize = (size, circleSize, isPreview = false) => {
+  let scaledSize = size * 0.5; // Grundlegende Skalierung für Dreieck
+  if (isPreview && circleSize > 300) {
+    // Kleinere Skalierung des Dreiecks, wenn der Kreis größer als 300 ist
+    scaledSize *= previewScaleFactor;
+  }
+  return scaledSize;
+};
 
 const saveOrUpdateItemConfig = async () => {
   const updatedItem = {
@@ -727,7 +717,14 @@ const saveOrUpdateItemConfig = async () => {
       editingIndex.value = null;
       isItemModalOpen.value = false;
     } catch (error) {
-      console.error("Fehler beim Speichern/Aktualisieren:", error);
+      if (error.response?.status === 401) {
+        triggerAlert(
+          "error",
+          "Sie sind nicht berechtigt, dieses Item zu aktualisieren."
+        );
+      } else {
+        triggerAlert("error", "Fehler beim Aktualisieren der Konfiguration.");
+      }
     }
   } else {
     // Neues Item erstellen und in `testItems` und `selectedItems` hinzufügen
@@ -741,7 +738,7 @@ const saveOrUpdateItemConfig = async () => {
       selectedItems.value.push(response.id);
       isItemModalOpen.value = false;
     } catch (error) {
-      console.error("Fehler beim Erstellen eines neuen Items:", error);
+      triggerAlert("error", "Fehler beim Speichern der Konfiguration.");
     }
   }
 };
@@ -766,13 +763,17 @@ const updateTestConfig = async () => {
     });
 
     // Zeige den Erfolg-Alert an
-    showSuccessAlert.value = true;
-
-    // Verstecke den Alert nach 3 Sekunden
-    setTimeout(() => {
-      showSuccessAlert.value = false;
-    }, 3000);
-  } catch (error) {}
+    triggerAlert("success", "Sehtest erfolgreich aktualisiert!");
+  } catch (error) {
+    if (error.response?.status === 401) {
+      triggerAlert(
+        "error",
+        "Sie sind nicht berechtigt, diesen Sehtest zu aktualisieren."
+      );
+    } else {
+      triggerAlert("error", "Fehler beim Aktualisieren der Konfiguration.");
+    }
+  }
 };
 
 const adjustTriangleSize = (change) => {
