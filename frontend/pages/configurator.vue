@@ -329,9 +329,10 @@ definePageMeta({
   middleware: "auth",
 });
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 const route = useRoute();
-const saveTestEndpoint = "http://localhost:8000/api/test_configs";
-const loadTestEndpoint = "http://localhost:8000/api/test_configs/";
+const saveTestEndpoint = `${BACKEND_URL}/api/test_configs`;
+const loadTestEndpoint = `${BACKEND_URL}/api/test_configs/`;
 
 const testItems = ref([]);
 const selectedItems = ref([]);
@@ -418,27 +419,22 @@ const saveUnsavedItems = async () => {
     const itemId = selectedItems.value[i];
     const item = testItems.value.find((config) => config.id === itemId);
 
-    // Prüfen, ob das Item ungespeichert ist
     if (item && item.isUnsaved) {
       try {
-        const response = await $fetch(
-          "http://localhost:8000/api/item_configs",
-          {
-            method: "POST",
-            body: {
-              triangle_size: item.triangle_size,
-              triangle_color: item.triangle_color,
-              circle_size: item.circle_size,
-              circle_color: item.circle_color,
-              orientation: item.orientation,
-              time_visible_ms: 5000,
-            },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        // Aktualisiere die ID und markiere das Item als gespeichert
+        const response = await $fetch(`${BACKEND_URL}/api/item_configs`, {
+          method: "POST",
+          body: {
+            triangle_size: item.triangle_size,
+            triangle_color: item.triangle_color,
+            circle_size: item.circle_size,
+            circle_color: item.circle_color,
+            orientation: item.orientation,
+            time_visible_ms: 5000,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         item.id = response.id;
         item.isUnsaved = false;
         selectedItems.value[i] = response.id;
@@ -450,7 +446,7 @@ const saveUnsavedItems = async () => {
 };
 
 const deleteTestConfig = async () => {
-  isDeleteConfirmModalOpen.value = false; // Modal schließen
+  isDeleteConfirmModalOpen.value = false;
   try {
     const token = localStorage.getItem("token");
     await $fetch(`${loadTestEndpoint}${loadedTestId.value}`, {
@@ -459,13 +455,10 @@ const deleteTestConfig = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
-    // Zustand zurücksetzen und Erfolgsmeldung anzeigen
     loadedTestId.value = null;
     loadedTestName.value = "";
     testItems.value = [];
     selectedItems.value = [];
-
-    // Lösch-Feedback-Alert anzeigen
     triggerAlert("success", "Sehtest erfolgreich gelöscht!");
   } catch (error) {
     if (error.response?.status === 401) {
@@ -646,32 +639,36 @@ const deleteItem = async (index) => {
   if (itemId && !item.isUnsaved) {
     try {
       const token = localStorage.getItem("token");
-      await $fetch(`http://localhost:8000/api/item_configs/${itemId}`, {
+      await $fetch(`${BACKEND_URL}/api/item_configs/${itemId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      // Erfolgsmeldung anzeigen
+      // Erfolgsmeldung anzeigen, wenn das Löschen im Backend erfolgreich ist
       triggerAlert("success", "Item erfolgreich gelöscht!");
-
     } catch (error) {
       if (error.response?.status === 401) {
-        triggerAlert("error", "Sie sind nicht berechtigt, dieses Item zu löschen.");
+        triggerAlert(
+          "error",
+          "Sie sind nicht berechtigt, dieses Item zu löschen."
+        );
         return;
       } else {
         triggerAlert("error", "Fehler beim Löschen des Items.");
         return;
       }
     }
+  } else {
+    // Erfolgsmeldung auch anzeigen, wenn das Item nur im Frontend gelöscht wird
+    triggerAlert("success", "Item erfolgreich gelöscht!");
   }
 
   // Entferne die Item-Config im Frontend, egal ob sie in der Datenbank war oder nicht
   testItems.value.splice(index, 1);
   selectedItems.value = selectedItems.value.filter((id) => id !== itemId);
 };
-
 
 const setModalOrientation = (newOrientation) => {
   modalOrientation.value = newOrientation;
@@ -719,7 +716,7 @@ const saveOrUpdateItemConfig = async () => {
       let response;
       if (!item.id || item.createdByUser) {
         // POST-Request für ein neues Item
-        response = await $fetch("http://localhost:8000/api/item_configs", {
+        response = await $fetch(`${BACKEND_URL}/api/item_configs`, {
           method: "POST",
           body: updatedItem,
           headers: { Authorization: `Bearer ${token}` },
@@ -734,7 +731,7 @@ const saveOrUpdateItemConfig = async () => {
         }
       } else {
         // PUT-Request für ein bereits gespeichertes Item
-        await $fetch(`http://localhost:8000/api/item_configs/${item.id}`, {
+        await $fetch(`${BACKEND_URL}/api/item_configs/${item.id}`, {
           method: "PUT",
           body: updatedItem,
           headers: { Authorization: `Bearer ${token}` },
@@ -758,7 +755,7 @@ const saveOrUpdateItemConfig = async () => {
   } else {
     // Neues Item erstellen und in `testItems` und `selectedItems` hinzufügen
     try {
-      const response = await $fetch("http://localhost:8000/api/item_configs", {
+      const response = await $fetch(`${BACKEND_URL}/api/item_configs`, {
         method: "POST",
         body: updatedItem,
         headers: { Authorization: `Bearer ${token}` },
