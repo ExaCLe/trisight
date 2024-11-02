@@ -85,33 +85,35 @@
     </div>
 
     <!-- Spielende-Anzeige -->
-    <div class="game-over" v-if="isGameOver && isTrisightMode">
-      <div class="final-score">Dein Score: {{ score }}</div>
-      <!-- Neue Buttons für Home und Neue Runde -->
-      <div class="button-group">
-        <NuxtLink to="/" class="button">Home</NuxtLink>
-        <button @click="startNewRound" class="button">Neue Runde</button>
-      </div>
-    </div>
+    <!-- Verwende das ResultsOverlay-Overlay -->
+    <ResultsOverlay
+      :isVisible="isGameOver && isTrisightMode"
+      :correct-answers="score"
+      :total-questions="detailedResults.length"
+      :score="score"
+      :detailed-results="detailedResults"
+      @new-round="startNewRound"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
+import ResultsOverlay from '~/components/ResultsOverlay.vue'; // Importiere die ResultsOverlay-Komponente
 
 definePageMeta({
-  middleware: 'auth', // Reference your middleware file
+  middleware: 'auth', // Referenziere deine Middleware-Datei
 });
 
 const config = useRuntimeConfig();
 
-const toast = useToast(); 
+const toast = useToast();
 
 // Router verwenden, um den Query-Parameter zu erhalten
 const route = useRoute();
 const isTrisightMode = ref(route.query.isTrisightMode === "true");
-const difficulty = ref(route.query.difficulty || "easy"); // Default to 'easy'
+const difficulty = ref(route.query.difficulty || "easy"); // Default zu 'easy'
 
 const score = ref(0);
 const currentIndex = ref(0);
@@ -125,8 +127,11 @@ const isGameStarted = ref(false); // Neuer Zustand zur Überprüfung, ob das Spi
 const remainingGameTime = ref(60); // Verbleibende Zeit für das Spiel in Sekunden
 const randomizedItems = ref([]);
 const fetchError = ref(false);
-const itemConfigResultIds = ref([]); // To store the IDs of item_config_results
+const itemConfigResultIds = ref([]); // Zum Speichern der IDs von item_config_results
 const isTriangleVisible = ref(false); // Zustand für die Sichtbarkeit des Dreiecks
+
+// Detailed Results Array
+const detailedResults = ref([]);
 
 // Begrenzte Größen für das Dreieck und den Kreis
 const limitedTriangleSize = computed(() =>
@@ -172,7 +177,7 @@ const startGameTimer = () => {
   }, 1000); // Der Timer reduziert sich jede Sekunde
 };
 
-// Function to get test_config_id based on difficulty and mode
+// Funktion zur Ermittlung der test_config_id basierend auf Schwierigkeitsgrad und Modus
 const getTestConfigId = () => {
   if (isTrisightMode.value) {
     switch (difficulty.value) {
@@ -197,14 +202,14 @@ const fetchData = async () => {
       response = await $fetch(endpoint);
       response = { item_configs: response };
     } else {
-      const testConfigId = getTestConfigId(); // Get test_config_id
+      const testConfigId = getTestConfigId(); // Erhalte test_config_id
       const endpoint = `${config.public.backendUrl}/api/test_configs/${testConfigId}`;
       response = await $fetch(endpoint);
     }
-    fetchError.value = false; // No error
+    fetchError.value = false; // Kein Fehler
     return response;
   } catch (error) {
-    fetchError.value = true; // Set error state
+    fetchError.value = true; // Setze Fehlerstatus
     return null;
   }
 };
@@ -223,7 +228,6 @@ const fetchCustomTestData = async (testConfigId) => {
     return null;
   }
 };
-
 
 const initializeGame = () => {
   if (data && data.item_configs.length > 0) {
@@ -290,11 +294,18 @@ const checkAnswer = (direction) => {
   const isCorrect = direction === currentItem.value.orientation;
   const reactionTime = totalTime.value - remainingTime.value;
 
+  const result = {
+    correctOrientation: { ...currentItem.value },
+    userInput: { orientation: direction },
+    isCorrect
+  };
+  detailedResults.value.push(result);
+
   submitItemConfigResult(
     currentItem.value.id,
     isCorrect,
     reactionTime,
-    direction // This is the user's response (direction)
+    direction // Dies ist die Benutzerantwort (Richtung)
   );
 
   if (isCorrect) {
@@ -305,26 +316,26 @@ const checkAnswer = (direction) => {
 
 const submitTestConfigResult = async () => {
   try {
-    const token = localStorage.getItem('token'); // Get token from localStorage
-    const testConfigId = getTestConfigId(); // Get test_config_id based on difficulty and mode
+    const token = localStorage.getItem('token'); // Erhalte Token aus localStorage
+    const testConfigId = getTestConfigId(); // Erhalte test_config_id basierend auf Schwierigkeitsgrad und Modus
 
     const payload = {
-      test_config_id: testConfigId, // Use the dynamically retrieved test_config_id
+      test_config_id: testConfigId, // Verwende die dynamisch abgerufene test_config_id
       time: new Date().toISOString(),
       correct_answers: score.value,
-      wrong_answers: randomizedItems.value.length - score.value,
-      item_config_result_ids: itemConfigResultIds.value, // Use the stored result IDs from item_config submissions
+      wrong_answers: detailedResults.value.length - score.value, // Korrigiert hier
+      item_config_result_ids: itemConfigResultIds.value, // Verwende die gespeicherten Ergebnis-IDs von item_config Submissionen
     };
 
     await $fetch(`${config.public.backendUrl}/api/test_config_results/`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`, // Add Bearer token to the request
+        Authorization: `Bearer ${token}`, // Füge Bearer Token zur Anfrage hinzu
       },
       body: payload,
     });
   } catch (error) {
-    // Show error toast
+    // Zeige Fehler-Toast
     toast.add({
       title: 'Error',
       description: 'Failed to submit test results. Please try again.',
@@ -333,6 +344,7 @@ const submitTestConfigResult = async () => {
   }
 };
 
+// Load Next Item
 const loadNextItem = () => {
   if (currentIndex.value < randomizedItems.value.length - 1) {
     currentIndex.value++;
@@ -349,12 +361,12 @@ const loadNextItem = () => {
 };
 
 const endGame = () => {
-  isGameOver.value = true; // Set game status to 'over'
-  clearInterval(timer.value); // Stop the timer
-  clearInterval(gameTimer.value); // Stop the game timer
-  removeKeyListener(); // Remove event listeners for key presses
-  
-  // Submit the final test results to the backend
+  isGameOver.value = true; // Setze Spielstatus auf 'over'
+  clearInterval(timer.value); // Stoppe den Timer
+  clearInterval(gameTimer.value); // Stoppe den Game Timer
+  removeKeyListener(); // Entferne Event-Listener für Tastendrücke
+
+  // Reiche die finalen Testergebnisse an das Backend ein
   submitTestConfigResult();
 };
 
@@ -371,7 +383,8 @@ const startNewRound = () => {
   remainingGameTime.value = 60;
   isGameOver.value = false;
   isGameStarted.value = false;
-  isTriangleVisible.value = false; // Dreieck ausblenden
+  isTriangleVisible.value = false;
+  detailedResults.value = [];
   initializeGame();
 
   if (typeof window !== "undefined") {
@@ -410,7 +423,7 @@ const getRotationStyle = (orientation) => {
 
 const submitItemConfigResult = async (itemConfigId, isCorrect, reactionTime, response) => {
   try {
-    const token = localStorage.getItem('token'); // Get token from localStorage
+    const token = localStorage.getItem('token'); // Erhalte Token aus localStorage
     const payload = {
       item_config_id: itemConfigId,
       correct: isCorrect,
@@ -421,17 +434,17 @@ const submitItemConfigResult = async (itemConfigId, isCorrect, reactionTime, res
     const result = await $fetch(`${config.public.backendUrl}/api/item_config_results/`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`, // Add Bearer token to the request
+        Authorization: `Bearer ${token}`, // Füge Bearer Token zur Anfrage hinzu
       },
       body: payload,
     });
 
-    // Store the returned id from the successful POST request
+    // Speichere die zurückgegebene ID aus der erfolgreichen POST-Anfrage
     if (result && result.id) {
       itemConfigResultIds.value.push(result.id);
     }
   } catch (error) {
-    // Show error toast
+    // Zeige Fehler-Toast
     toast.add({
       title: 'Error',
       description: 'Failed to submit test results. Please try again.',
@@ -444,13 +457,13 @@ onMounted(async () => {
   if (typeof window !== "undefined") {
     window.addEventListener("keydown", handleKeyPress);
   }
-  
+
   // Überprüfen, ob `testConfigId` im Query vorhanden ist
   const testConfigId = route.query.testConfigId; // Query-Parameter für benutzerdefinierte `test_config`
 
   if (testConfigId) {
-    // Benutzerdefinierten Test laden, falls `testConfigId` vorhanden ist
-    const data = await fetchCustomTestData(testConfigId); 
+    // Lade benutzerdefinierten Test, falls `testConfigId` vorhanden ist
+    const data = await fetchCustomTestData(testConfigId);
     if (data && data.item_configs.length > 0) {
       randomizedItems.value = [...data.item_configs];
       currentItem.value = randomizedItems.value[0];
@@ -458,7 +471,7 @@ onMounted(async () => {
       remainingTime.value = totalTime.value;
     }
   } else {
-    // Standard- oder Trisight-Modus laden, falls `testConfigId` nicht vorhanden ist
+    // Lade Standard- oder Trisight-Modus, falls `testConfigId` nicht vorhanden ist
     const data = await fetchData();
     if (data && data.item_configs.length > 0) {
       randomizedItems.value = isTrisightMode.value
@@ -470,7 +483,6 @@ onMounted(async () => {
     }
   }
 });
-
 
 onUnmounted(() => {
   removeKeyListener(); // Entferne den Event-Listener, wenn die Komponente zerstört wird
@@ -587,51 +599,8 @@ onUnmounted(() => {
 }
 
 .game-over {
-  display: flex;
-  flex-direction: column; /* Buttons unter dem Score */
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  color: #185262;
-  font-size: 40px;
-  font-weight: bold;
-  background-color: #fff8ec; /* Hintergrundfarbe bei Spielende */
-  text-align: center;
-}
-
-.final-score {
-  margin-bottom: 20px; /* Abstand zwischen Score und Buttons */
-  animation: fadeIn 1s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.button-group {
-  display: flex;
-  gap: 20px;
-}
-
-.button {
-  background-color: #185262;
-  color: #fff8ec;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 40px;
-  cursor: pointer;
-  font-size: 18px;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-.button:hover {
-  background-color: #0f3e4b;
-  color: #fff;
+  /* Entferne das ursprüngliche Layout für game-over */
+  /* Da wir nun ein Overlay verwenden */
 }
 
 /* Stil für den Error Alert */
