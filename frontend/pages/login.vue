@@ -65,7 +65,6 @@
                     Forgot Password?
                 </span>
             </div>
-            <UButton type="button" @click="navigateTo('/register')" class="ml-4 border-blue-dianne-900 text-color-blue-dianne-900" variant="outline">Register</UButton>
         </UForm>
 
         <!-- Google Sign-in Button -->

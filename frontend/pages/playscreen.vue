@@ -184,7 +184,7 @@ const getTestConfigId = () => {
         return 1; // Easy mode
     }
   } else {
-    return 2; // Standard mode
+    return 1; // Standard mode
   }
 };
 
@@ -210,6 +210,20 @@ const fetchData = async () => {
 };
 
 const data = await fetchData();
+
+// Funktion zum Laden eines benutzerdefinierten Sehtests anhand der ID
+const fetchCustomTestData = async (testConfigId) => {
+  try {
+    const endpoint = `${config.public.backendUrl}/api/test_configs/${testConfigId}`;
+    const response = await $fetch(endpoint);
+    fetchError.value = false; // Kein Fehler
+    return response;
+  } catch (error) {
+    fetchError.value = true;
+    return null;
+  }
+};
+
 
 const initializeGame = () => {
   if (data && data.item_configs.length > 0) {
@@ -426,12 +440,37 @@ const submitItemConfigResult = async (itemConfigId, isCorrect, reactionTime, res
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   if (typeof window !== "undefined") {
     window.addEventListener("keydown", handleKeyPress);
   }
-  initializeGame();
+  
+  // Überprüfen, ob `testConfigId` im Query vorhanden ist
+  const testConfigId = route.query.testConfigId; // Query-Parameter für benutzerdefinierte `test_config`
+
+  if (testConfigId) {
+    // Benutzerdefinierten Test laden, falls `testConfigId` vorhanden ist
+    const data = await fetchCustomTestData(testConfigId); 
+    if (data && data.item_configs.length > 0) {
+      randomizedItems.value = [...data.item_configs];
+      currentItem.value = randomizedItems.value[0];
+      totalTime.value = currentItem.value.time_visible_ms;
+      remainingTime.value = totalTime.value;
+    }
+  } else {
+    // Standard- oder Trisight-Modus laden, falls `testConfigId` nicht vorhanden ist
+    const data = await fetchData();
+    if (data && data.item_configs.length > 0) {
+      randomizedItems.value = isTrisightMode.value
+        ? shuffleArray([...data.item_configs]) // Zufällig für Trisight
+        : [...data.item_configs];
+      currentItem.value = randomizedItems.value[0];
+      totalTime.value = currentItem.value.time_visible_ms;
+      remainingTime.value = totalTime.value;
+    }
+  }
 });
+
 
 onUnmounted(() => {
   removeKeyListener(); // Entferne den Event-Listener, wenn die Komponente zerstört wird

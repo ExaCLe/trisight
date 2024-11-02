@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/{difficulty}", response_model=List[schemas.ItemConfigResponse])
-def get_item_configs(difficulty: str, limit: int = 10, db: Session = Depends(get_db)):
+def get_item_configs(difficulty: str, limit: int = 500, db: Session = Depends(get_db)):
     """API endpoint to retrieve ItemConfigs for a given difficulty."""
     if difficulty not in ["easy", "medium", "hard"]:
         raise HTTPException(status_code=404, detail="Invalid difficulty level")
