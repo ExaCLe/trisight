@@ -36,6 +36,70 @@ def override_get_db():
         db.close()
 
 
+def insert_test_config_result_to_db(token):
+    """
+    Inserts a Test Configuration Result along with its Item Configuration Results into the database.
+
+    :param token: Bearer token for authentication.
+    :return: Response object from the API call.
+    """
+    # Insert Test Configuration
+    response = insert_test_config_to_db(token)
+    assert response.status_code == 200
+    test_config = response.json()
+    test_config_id = test_config["id"]
+
+    # Insert two Item Configuration Results linked to the Test Configuration
+    item_config_result_ids = []
+    for _ in range(2):
+        item_config_id = test_config["item_config_ids"][_]
+        item_config_result_response = insert_item_config_result_to_db(
+            token, item_config_id, correct=True, reaction_time_ms=150, response="N"
+        )
+        assert item_config_result_response.status_code == 200
+        item_config_result_ids.append(item_config_result_response.json()["id"])
+
+    # Insert Test Configuration Result
+    test_config_result_data = {
+        "test_config_id": test_config_id,
+        "correct_answers": 2,
+        "wrong_answers": 0,
+        "item_config_result_ids": item_config_result_ids,
+        "time": "2024-01-01T00:00:00",
+    }
+    return client.post(
+        "/api/test_config_results/",
+        json=test_config_result_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
+def insert_item_config_result_to_db(
+    token, item_config_id, correct=True, reaction_time_ms=100, response="N"
+):
+    """
+    Inserts an Item Configuration Result into the database.
+
+    :param token: Bearer token for authentication.
+    :param item_config_id: ID of the associated Item Configuration.
+    :param correct: Boolean indicating if the answer was correct.
+    :param reaction_time_ms: Reaction time in milliseconds.
+    :param response: User's response.
+    :return: Response object from the API call.
+    """
+    item_config_result_data = {
+        "item_config_id": item_config_id,
+        "correct": correct,
+        "reaction_time_ms": reaction_time_ms,
+        "response": response,
+    }
+    return client.post(
+        "/api/item_config_results/",
+        json=item_config_result_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
 app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
@@ -173,7 +237,7 @@ def test_insert_test_config_result_with_invalid_test_config_id(setup_database):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 422
-    assert "FOREIGN KEY constraint failed" in str(response.json()["detail"])
+    assert "Constraint error" in str(response.json()["detail"])
 
 
 def test_read_all_test_config_results_for_test_config(setup_database):
@@ -221,7 +285,7 @@ def test_read_all_test_config_results_for_test_config_only_own_results(setup_dat
     )
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
+    assert len(data) == 1  # Only the first user's result
     assert data[0]["test_config_id"] == test_config_id
     assert data[0]["correct_answers"] == 2
     assert data[0]["wrong_answers"] == 0
@@ -390,3 +454,71 @@ def test_delete_test_config_result_invalid_id(setup_database):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 404
+
+
+def test_read_all_test_config_results_for_user(setup_database):
+    token, user_id = get_user_id_and_token(client)
+    # Insert multiple Test Configuration Results
+    for _ in range(3):
+        response = insert_test_config_result_to_db(token)
+        assert response.status_code == 200
+
+    # Retrieve all Test Configuration Results for the user
+    response = client.get(
+        "/api/test_config_results/user",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 3
+    for item in data:
+        assert item["user_id"] == user_id
+        assert "test_config_id" in item
+        assert "correct_answers" in item
+        assert "wrong_answers" in item
+        assert "item_config_results" in item
+        assert "time" in item
+
+
+def test_read_all_test_config_results_for_user_unauthorized(setup_database):
+    # Attempt to retrieve without a valid token
+    response = client.get(
+        "/api/test_config_results/user",
+        headers={"Authorization": f"Bearer invalid_token"},
+    )
+    assert response.status_code == 401
+
+
+def test_read_all_test_config_results_for_user_only_own_results(setup_database):
+    token, user_id = get_user_id_and_token(client)
+    token2, user_id2 = get_user_id_and_token(client, "testuser2")
+
+    # User 1 inserts 2 Test Configuration Results
+    for _ in range(2):
+        response = insert_test_config_result_to_db(token)
+        assert response.status_code == 200
+
+    # User 2 inserts 1 Test Configuration Result
+    response = insert_test_config_result_to_db(token2)
+    assert response.status_code == 200
+
+    # User 1 retrieves their Test Configuration Results
+    response = client.get(
+        "/api/test_config_results/user",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    for item in data:
+        assert item["user_id"] == user_id
+
+    # User 2 retrieves their Test Configuration Results
+    response = client.get(
+        "/api/test_config_results/user",
+        headers={"Authorization": f"Bearer {token2}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["user_id"] == user_id2

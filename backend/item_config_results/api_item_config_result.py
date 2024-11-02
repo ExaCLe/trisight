@@ -1,3 +1,4 @@
+# api_item_configs_results.py
 from fastapi import HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 
@@ -6,11 +7,20 @@ from backend.item_config_results.crud_item_config_result import (
     create_item_config_result,
     get_all_item_config_results_for_item_config,
     get_item_config_result_by_id,
+    get_all_item_config_results_for_user,  # New CRUD function
 )
 from backend.user.api_user import get_current_user
 from backend.utils import get_db
 
 router = APIRouter()
+
+
+@router.get("/user", response_model=list[schemas.ItemConfigResultResponse])
+def read_all_item_config_results_for_user_endpoint(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return get_all_item_config_results_for_user(db, user=user)
 
 
 @router.post("/", response_model=schemas.ItemConfigResultResponse)
@@ -43,7 +53,6 @@ def read_item_config_result_endpoint(
     item_config_result = get_item_config_result_by_id(
         db, item_config_result_id=item_config_result_id, user=user
     )
-    print(item_config_result.user_id, user.id)
     if item_config_result is None:
         raise HTTPException(
             status_code=404,

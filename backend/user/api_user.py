@@ -56,9 +56,6 @@ def authenticate_user(db: Session, email: str, password: str):
     user = get_user(db, email)
     if not user:
         return False
-    print(
-        user.hashed_password, password, verify_password(password, user.hashed_password)
-    )
     if user.hashed_password:
         if not verify_password(password, user.hashed_password):
             return False
@@ -257,6 +254,7 @@ def reset_password(data: ResetPassword, db: Session = Depends(get_db)):
     db.commit()
 
     return {"msg": "Password has been reset"}
+
 
 oauth = OAuth()
 

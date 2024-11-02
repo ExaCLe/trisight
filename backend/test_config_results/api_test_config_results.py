@@ -1,3 +1,4 @@
+# api_test_config_results.py
 from fastapi import HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 
@@ -8,11 +9,21 @@ from backend.test_config_results.crud_test_config_results import (
     get_test_config_result_by_id,
     update_test_config_result,
     delete_test_config_result,
+    get_all_test_config_results_for_user,  # New CRUD function
 )
 from backend.user.api_user import get_current_user
 from backend.utils import get_db
 
 router = APIRouter()
+
+
+# New Endpoint to get all Test Config Results for the authenticated user
+@router.get("/user", response_model=list[schemas.TestConfigResultResponse])
+def read_all_test_config_results_for_user_endpoint(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    return get_all_test_config_results_for_user(db, user=user)
 
 
 @router.post("/", response_model=schemas.TestConfigResultResponse)
