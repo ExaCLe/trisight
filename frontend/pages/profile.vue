@@ -353,7 +353,6 @@ async function fetchStatistics() {
       ],
     };
   } catch (error) {
-    console.log(error)
     toast.add({
       title: "Fehler beim Abrufen der Statistiken.",
       id: "fetch-stats-failed",
