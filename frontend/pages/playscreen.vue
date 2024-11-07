@@ -87,7 +87,7 @@
     <!-- Spielende-Anzeige -->
     <!-- Verwende das ResultsOverlay-Overlay -->
     <ResultsOverlay
-      :isVisible="isGameOver && isTrisightMode"
+      :isVisible="isGameOver"
       :correct-answers="score"
       :total-questions="detailedResults.length"
       :score="score"
