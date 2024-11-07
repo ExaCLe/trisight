@@ -329,10 +329,11 @@ definePageMeta({
   middleware: "auth",
 });
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const config = useRuntimeConfig();
+
 const route = useRoute();
-const saveTestEndpoint = `${BACKEND_URL}/api/test_configs`;
-const loadTestEndpoint = `${BACKEND_URL}/api/test_configs/`;
+const saveTestEndpoint = `${config.public.backendUrl}/api/test_configs`;
+const loadTestEndpoint = `${config.public.backendUrl}/api/test_configs/`;
 
 const testItems = ref([]);
 const selectedItems = ref([]);
@@ -421,7 +422,7 @@ const saveUnsavedItems = async () => {
 
     if (item && item.isUnsaved) {
       try {
-        const response = await $fetch(`${BACKEND_URL}/api/item_configs`, {
+        const response = await $fetch(`${config.public.backendUrl}/api/item_configs`, {
           method: "POST",
           body: {
             triangle_size: item.triangle_size,
@@ -639,7 +640,7 @@ const deleteItem = async (index) => {
   if (itemId && !item.isUnsaved) {
     try {
       const token = localStorage.getItem("token");
-      await $fetch(`${BACKEND_URL}/api/item_configs/${itemId}`, {
+      await $fetch(`${config.public.backendUrl}/api/item_configs/${itemId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -716,7 +717,7 @@ const saveOrUpdateItemConfig = async () => {
       let response;
       if (!item.id || item.createdByUser) {
         // POST-Request für ein neues Item
-        response = await $fetch(`${BACKEND_URL}/api/item_configs`, {
+        response = await $fetch(`${config.public.backendUrl}/api/item_configs`, {
           method: "POST",
           body: updatedItem,
           headers: { Authorization: `Bearer ${token}` },
@@ -731,7 +732,7 @@ const saveOrUpdateItemConfig = async () => {
         }
       } else {
         // PUT-Request für ein bereits gespeichertes Item
-        await $fetch(`${BACKEND_URL}/api/item_configs/${item.id}`, {
+        await $fetch(`${config.public.backendUrl}/api/item_configs/${item.id}`, {
           method: "PUT",
           body: updatedItem,
           headers: { Authorization: `Bearer ${token}` },
@@ -755,7 +756,7 @@ const saveOrUpdateItemConfig = async () => {
   } else {
     // Neues Item erstellen und in `testItems` und `selectedItems` hinzufügen
     try {
-      const response = await $fetch(`${BACKEND_URL}/api/item_configs`, {
+      const response = await $fetch(`${config.public.backendUrl}/api/item_configs`, {
         method: "POST",
         body: updatedItem,
         headers: { Authorization: `Bearer ${token}` },
