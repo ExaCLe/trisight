@@ -68,7 +68,7 @@
           class="test-config-card"
         >
           <div class="card-header" @click="toggleCard(testConfig.id)">
-            <span class="card-title">Test ID: {{ testConfig.id }}</span>
+            <span class="card-title">Test ID: {{ testConfig.name }}</span>
             <span class="toggle-icon">{{ isCardOpen(testConfig.id) ? '-' : '+' }}</span>
           </div>
           <div v-if="isCardOpen(testConfig.id)" class="card-body">
