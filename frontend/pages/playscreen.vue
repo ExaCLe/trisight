@@ -338,7 +338,7 @@ const submitTestConfigResult = async () => {
     // Zeige Fehler-Toast
     toast.add({
       title: 'Error',
-      description: 'Failed to submit test results. Please try again.',
+      description: 'Fehler beim Übermitteln der Testergebnisse. Bitte versuchen Sie es erneut.',
       type: 'error', // success, error, warning, or info
     });
   }
