@@ -1,3 +1,4 @@
+# crud_test_config_results.py
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -117,3 +118,11 @@ def delete_test_config_result(
     else:
         raise HTTPException(status_code=404, detail="TestConfigResult not found")
     return db_test_config_result
+
+
+def get_all_test_config_results_for_user(db: Session, user: models.User):
+    return (
+        db.query(models.TestConfigResult)
+        .filter(models.TestConfigResult.user_id == user.id)
+        .all()
+    )

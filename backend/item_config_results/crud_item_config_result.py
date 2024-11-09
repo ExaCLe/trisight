@@ -43,3 +43,12 @@ def get_item_config_result_by_id(
         .filter(models.ItemConfigResult.id == item_config_result_id)
         .first()
     )
+
+
+def get_all_item_config_results_for_user(db: Session, user: models.User):
+    print(user.id)
+    return (
+        db.query(models.ItemConfigResult)
+        .filter(models.ItemConfigResult.user_id == user.id)
+        .all()
+    )
